@@ -1,12 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import './BackgroundBuilder.css';
+import React, { useState, useEffect } from "react";
+import "./BackgroundBuilder.css";
 
 // Utility to import all images from a folder dynamically
 function importAllImages(r) {
   let images = [];
   r.keys().forEach((item) => {
     images.push({
-      name: item.replace('./', ''),
+      name: item.replace("./", ""),
       url: r(item).default || r(item),
     });
   });
@@ -20,10 +20,17 @@ export default function BackgroundBuilder() {
   // On mount, load all images from src/images folder
   useEffect(() => {
     try {
-      const imgs = importAllImages(require.context('../images', false, /\.(jpe?g|png|svg)$/));
+      const imgs = importAllImages(
+        require.context("../images", true, /\.(jpe?g|png|svg)$/)
+      );
+      console.log(
+        "Loaded images:",
+        imgs.length,
+        imgs.map((i) => i.name)
+      ); // log count and names
       setBackgrounds(imgs);
     } catch (error) {
-      console.error('Error loading images:', error);
+      console.error("Error loading images:", error);
     }
   }, []);
 
@@ -37,7 +44,7 @@ export default function BackgroundBuilder() {
               <li key={i} className="background-item">
                 <button
                   onClick={() => setSelectedBackground(bg.url)}
-                  className={selectedBackground === bg.url ? 'selected' : ''}
+                  className={selectedBackground === bg.url ? "selected" : ""}
                   title={bg.name}
                 >
                   <img
@@ -46,7 +53,9 @@ export default function BackgroundBuilder() {
                     className="thumbnail"
                     loading="lazy"
                   />
-                  <div className="bg-name">{bg.name || bg.name.split('.')[0]}</div>
+                  <div className="bg-name">
+                    {bg.name || bg.name.split(".")[0]}
+                  </div>
                 </button>
               </li>
             ))
