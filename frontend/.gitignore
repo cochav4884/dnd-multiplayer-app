@@ -1,0 +1,21 @@
+# System files
+.DS_Store
+Thumbs.db
+
+# VSCode settings folder
+.vscode/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Environment variables
+.env
+
+# Node modules from backend or frontend (safer to ignore node_modules globally)
+node_modules/
+
+# Build folders
+frontend/build/
+backend/build/
