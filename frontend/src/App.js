@@ -5,6 +5,7 @@ import Lobby from "./Lobby";
 import { UserContext } from "./UserContext";
 import "./App.css"; // load styles including grid
 import BackgroundBuilder from "./components/BackgroundBuilder";
+import Grid from "./components/Grid";
 
 function App() {
   const { user } = useContext(UserContext);
