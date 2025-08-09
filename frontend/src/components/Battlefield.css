@@ -1,6 +1,8 @@
 /* src/components/Battlefield.css */
 
-html, body, #root {
+html,
+body,
+#root {
   height: 100%;
   margin: 0;
   padding: 0;
@@ -65,11 +67,17 @@ html, body, #root {
 
 /* Background image div */
 .background-image {
-  width: 100%;
-  height: 100%;
+  position: absolute; /* change to absolute */
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0; /* fill parent */
   background-size: cover;
   background-position: center;
-  position: relative;
+  z-index: 0; /* behind overlay */
+  pointer-events: none;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 /* Grid overlay with visible lines */
@@ -79,12 +87,16 @@ html, body, #root {
   left: 0;
   right: 0;
   bottom: 0;
-  background-image:
-    linear-gradient(to right, rgba(255, 255, 255, 0.1) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+  background-image: linear-gradient(
+      to right,
+      rgba(255, 255, 255, 0.4) 1px,
+      transparent 1px
+    ),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.4) 1px, transparent 1px);
   background-size: 70px 70px;
   z-index: 2;
   pointer-events: none;
+  filter: drop-shadow(0 0 1px rgba(255, 255, 255, 0.2));
 }
 
 /* Placeholder message if no map is selected */

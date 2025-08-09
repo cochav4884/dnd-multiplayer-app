@@ -1,77 +1,57 @@
+// src/LobbySidebar.js
 import React, { useContext, useEffect, useState } from "react";
 import { UserContext } from "./UserContext";
 import { socket } from "./socket";
 import { useNavigate } from "react-router-dom";
-import BackgroundBuilder from "./components/Battlefield"; // adjust path if needed
+import "./LobbySidebar.css"; // Optional: if you have custom styles
 
-export default function Lobby() {
+export default function LobbySidebar() {
   const { user, setUser } = useContext(UserContext);
   const [players, setPlayers] = useState([]);
   const navigate = useNavigate();
 
   useEffect(() => {
+    if (!user) return;
+
     socket.connect();
 
-    console.log("Joining room with user:", user); // DEBUG: log user sent to backend
     socket.emit("joinRoom", { room: "game-room-1", user });
 
     socket.on("playerList", (list) => {
-      console.log("Received player list:", list); // DEBUG: log player list from backend
       setPlayers(list);
-    });
-
-    socket.on("message", (msg) => {
-      console.log("Received message:", msg);
     });
 
     return () => {
       socket.off("playerList");
-      socket.off("message");
       socket.disconnect();
     };
   }, [user]);
 
-  function handleLeave() {
+  const handleLeave = () => {
     socket.disconnect();
     setUser(null);
     navigate("/");
-  }
+  };
 
   return (
-    <div className="container mt-5 d-flex">
-      {/* Left: Lobby info */}
-      <div style={{ flex: 1, marginRight: "20px" }}>
-        <h2>Welcome, {user.name}!</h2>
-        <p>
-          You are logged in as <strong>{user.role}</strong>.
-        </p>
+    <div className="lobby-sidebar">
+      <h3>Welcome, {user?.name}!</h3>
+      <p>
+        Role: <strong>{user?.role}</strong>
+      </p>
 
-        <h4>Players in Lobby:</h4>
-        <ul>
-          {players.map((p, i) => (
-            <li key={i}>
-              {p.name} — <em>{p.role}</em>
-            </li>
-          ))}
-        </ul>
+      <h4>Players in Lobby:</h4>
+      <ul style={{ listStyle: "none", paddingLeft: 0 }}>
+        {players.map((p, index) => (
+          <li key={index}>
+            {p.name} — <em>{p.role}</em>
+          </li>
+        ))}
+      </ul>
 
-        <button className="btn btn-danger mt-3" onClick={handleLeave}>
-          Leave Lobby
-        </button>
-
-        <p>This is the lobby. More game features coming soon!</p>
-      </div>
-
-      {/* Right: Background builder sidebar */}
-      <div
-        style={{
-          width: "300px",
-          borderLeft: "1px solid #ccc",
-          paddingLeft: "20px",
-        }}
-      >
-        <BackgroundBuilder />
-      </div>
+      <button className="leave-button" onClick={handleLeave}>
+        Leave Lobby
+      </button>
     </div>
   );
 }
