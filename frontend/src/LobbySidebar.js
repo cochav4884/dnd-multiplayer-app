@@ -2,7 +2,7 @@ import React, { useContext, useEffect, useState } from "react";
 import { UserContext } from "./UserContext";
 import { socket } from "./socket";
 import { useNavigate } from "react-router-dom";
-import BackgroundBuilder from "./components/BackgroundBuilder"; // adjust path if needed
+import BackgroundBuilder from "./components/Battlefield"; // adjust path if needed
 
 export default function Lobby() {
   const { user, setUser } = useContext(UserContext);

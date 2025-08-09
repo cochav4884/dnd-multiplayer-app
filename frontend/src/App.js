@@ -1,37 +1,49 @@
-import React, { useContext } from "react";
-import { Routes, Route, Navigate } from "react-router-dom";
-import Login from "./Login";
-import Lobby from "./Lobby";
+import { useState, useContext, useEffect } from "react";
 import { UserContext } from "./UserContext";
-import "./App.css"; // load styles including grid
-import BackgroundBuilder from "./components/BackgroundBuilder";
-import Grid from "./components/Grid";
+import Login from "./Login";
+import LobbySidebar from "./LobbySidebar";
+import BackgroundSidebar from "./components/BackgroundSidebar";
+import Battlefield from "./components/Battlefield";
+import { importAllImages } from "./utils/importAllImages";
+import "./App.css";
 
-function App() {
+// Make sure this path is correct relative to App.js
+const imagesContext = require.context(
+  "./images",
+  false,
+  /\.(png|jpe?g|svg)$/
+);
+
+const images = importAllImages(imagesContext);
+
+export default function App() {
   const { user } = useContext(UserContext);
+  const [selectedBackground, setSelectedBackground] = useState(null);
+
+  // Log loaded images once component renders
+  console.log("Loaded images:", images);
+
+  useEffect(() => {
+    if (user && Object.values(images).length > 0) {
+      setSelectedBackground(Object.values(images)[0]);
+    }
+  }, [user]); // only depend on user!
+
+  if (!user) {
+    return (
+      <div className="app-container">
+        <Login />
+      </div>
+    );
+  }
 
   return (
     <div className="app-container">
-      {/* Grid overlay */}
-      <div className="grid-overlay"></div>
-
-      {/* Foreground content */}
-      <div className="app-content">
-        <Routes>
-          <Route
-            path="/"
-            element={user ? <Navigate to="/lobby" /> : <Login />}
-          />
-          <Route
-            path="/lobby"
-            element={user ? <Lobby /> : <Navigate to="/" />}
-          />
-          <Route path="/background-builder" element={<BackgroundBuilder />} />
-          {/* Add more routes here */}
-        </Routes>
+      <div className="main-layout">
+        <LobbySidebar />
+        <Battlefield background={selectedBackground} />
+        <BackgroundSidebar onSelect={setSelectedBackground} />
       </div>
     </div>
   );
 }
-
-export default App;

@@ -1,0 +1,41 @@
+.main-layout {
+  display: grid;
+  grid-template-columns: 250px 1fr 250px; /* Lobby | Battlefield | Backgrounds */
+  height: 100vh;
+}
+
+.battlefield {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  height: 100vh;
+  background: #000;
+}
+
+.battlefield img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.grid-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none; /* So background can still be interacted with if needed */
+}
+
+.battlefield-placeholder {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  color: #ccc;
+  font-size: 1.2rem;
+  background-color: #222;
+  -webkit-user-select: none;
+  user-select: none;
+}
