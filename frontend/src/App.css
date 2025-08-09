@@ -36,3 +36,31 @@
     transform: rotate(360deg);
   }
 }
+
+/* === Stationary overlay grid with 20px squares === */
+.grid-overlay {
+  position: fixed; /* stays in place when scrolling */
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none; /* allow clicks through */
+  background-image:
+    linear-gradient(to right, rgba(0, 0, 0, 0.15) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.15) 1px, transparent 1px);
+  background-size: 20px 20px; /* squares are 20x20 pixels */
+  z-index: 0; /* behind content */
+}
+
+/* Full app container to position background and content */
+.app-container {
+  position: relative;
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+/* Content sits on top of the grid */
+.app-content {
+  position: relative;
+  z-index: 1;
+}
