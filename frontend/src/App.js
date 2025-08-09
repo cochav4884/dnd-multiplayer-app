@@ -7,7 +7,7 @@ import Battlefield from "./components/Battlefield";
 import { importAllImages } from "./utils/importAllImages";
 import "./App.css";
 
-// Make sure this path is correct relative to App.js
+// Load all images from images folder
 const imagesContext = require.context(
   "./images",
   false,
@@ -23,11 +23,12 @@ export default function App() {
   // Log loaded images once component renders
   console.log("Loaded images:", images);
 
+  // Set default background when user logs in and images are loaded
   useEffect(() => {
     if (user && Object.values(images).length > 0) {
       setSelectedBackground(Object.values(images)[0]);
     }
-  }, [user]); // only depend on user!
+  }, [user]);
 
   if (!user) {
     return (
@@ -42,7 +43,10 @@ export default function App() {
       <div className="main-layout">
         <LobbySidebar />
         <Battlefield background={selectedBackground} />
-        <BackgroundSidebar onSelect={setSelectedBackground} />
+        <BackgroundSidebar
+          selectedBackground={selectedBackground} // Pass current background here
+          onSelect={setSelectedBackground}
+        />
       </div>
     </div>
   );

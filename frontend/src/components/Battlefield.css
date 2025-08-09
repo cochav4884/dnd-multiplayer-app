@@ -1,33 +1,93 @@
-.main-layout {
-  display: grid;
-  grid-template-columns: 250px 1fr 250px; /* Lobby | Battlefield | Backgrounds */
-  height: 100vh;
+/* src/components/Battlefield.css */
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  font-family: sans-serif;
 }
 
+/* Layout for Lobby | Battlefield | Backgrounds */
+.main-layout {
+  display: grid;
+  grid-template-columns: 250px 1fr 250px;
+  height: 100vh;
+  width: 100vw;
+}
+
+/* ==== Sidebar Styles ==== */
+.lobby-sidebar,
+.background-sidebar {
+  background-color: #1e1e1e;
+  color: white;
+  padding: 10px;
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+
+/* Leave Button */
+.leave-button {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 15px;
+  background-color: #e74c3c;
+  border: none;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+/* Thumbnails for maps */
+.thumbnail {
+  width: 100%;
+  margin-bottom: 10px;
+  cursor: pointer;
+  border: 2px solid transparent;
+  box-sizing: border-box;
+  border-radius: 4px;
+  transition: border 0.2s;
+}
+
+.thumbnail:hover {
+  border: 2px solid #3498db;
+}
+
+/* ==== Battlefield Section ==== */
 .battlefield {
   position: relative;
   overflow: hidden;
   width: 100%;
-  height: 100vh;
+  height: 100%;
   background: #000;
 }
 
-.battlefield img {
+/* Background image div */
+.background-image {
   width: 100%;
   height: 100%;
-  object-fit: cover;
-  display: block;
+  background-size: cover;
+  background-position: center;
+  position: relative;
 }
 
+/* Grid overlay with visible lines */
 .grid-overlay {
   position: absolute;
   top: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none; /* So background can still be interacted with if needed */
+  right: 0;
+  bottom: 0;
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, 0.1) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+  background-size: 70px 70px;
+  z-index: 2;
+  pointer-events: none;
 }
 
+/* Placeholder message if no map is selected */
 .battlefield-placeholder {
   display: flex;
   justify-content: center;

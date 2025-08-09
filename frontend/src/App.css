@@ -12,7 +12,7 @@
   grid-template-columns: 250px 1fr 250px; /* Lobby | Battlefield | Background Sidebar */
   height: 100vh;
   width: 100%;
-  background-color: #000; /* fallback background */
+  background-color: #fff; /* fallback background */
 }
 
 /* Lobby Sidebar styling */
@@ -69,6 +69,10 @@
 
 .background-thumb:hover {
   border-color: #fff;
+}
+
+.background-thumb.selected {
+  border-color: #4caf50; /* green border for selected */
 }
 
 /* Scrollbar styling (optional) */
