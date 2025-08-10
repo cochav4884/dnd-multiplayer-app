@@ -26,7 +26,6 @@ function useSocketJoin(user, room = "game-room-1") {
     const onJoinError = (message) => {
       let friendlyMessage = message;
 
-      // Map server join errors to user-friendly alerts
       if (message === "Another \"Samuel\" is already the host. You cannot join.") {
         friendlyMessage = "Lobby is full for hosts.";
       } else if (message === "Only Samuel can be the host.") {
@@ -43,7 +42,6 @@ function useSocketJoin(user, room = "game-room-1") {
 
     socket.on("joinError", onJoinError);
 
-    // Reset hasJoined on disconnect so user can retry joining if reconnecting
     const handleDisconnect = () => {
       console.log("Socket disconnected.");
       hasJoined.current = false;
@@ -61,38 +59,37 @@ function useSocketJoin(user, room = "game-room-1") {
 export default function LobbySidebar() {
   const { user, setUser } = useContext(UserContext);
   const [players, setPlayers] = useState([]);
-  const [isHost, setIsHost] = useState(false); // Track if Samuel is the host
+  const [isHost, setIsHost] = useState(false);
+  const [gameStarted, setGameStarted] = useState(false);
+  const [hasJoinedBattlefield, setHasJoinedBattlefield] = useState(false);
   const navigate = useNavigate();
 
-  // Use the custom hook to join socket room once per user session
   useSocketJoin(user);
 
   useEffect(() => {
-    // Listen for player list updates
     const onPlayerList = (list) => {
       console.log("Received player list:", list);
       setPlayers(list);
     };
 
-    // Listen for host status updates
     const onHostStatus = (status) => {
       console.log("Host status received:", status);
       setIsHost(status);
     };
 
-    // Listen for server messages (optional)
-    const onMessage = (msg) => {
-      console.log("Server message:", msg);
+    const onGameStarted = () => {
+      console.log("Game started");
+      setGameStarted(true);
     };
 
     socket.on("playerList", onPlayerList);
     socket.on("hostStatus", onHostStatus);
-    socket.on("message", onMessage);
+    socket.on("gameStarted", onGameStarted);
 
     return () => {
       socket.off("playerList", onPlayerList);
       socket.off("hostStatus", onHostStatus);
-      socket.off("message", onMessage);
+      socket.off("gameStarted", onGameStarted);
     };
   }, []);
 
@@ -110,8 +107,20 @@ export default function LobbySidebar() {
     ) {
       console.log("Clear lobby requested");
       socket.emit("clearRoom", "game-room-1");
-      setPlayers([]); // Immediately clear on client side too
+      setPlayers([]);
+      setHasJoinedBattlefield(false);
+      setGameStarted(false);
     }
+  };
+
+  const handleJoinBattlefield = () => {
+    socket.emit("joinBattlefield", { user });
+    setHasJoinedBattlefield(true);
+  };
+
+  const handleStartGame = () => {
+    socket.emit("startGame");
+    setGameStarted(true);
   };
 
   if (!user) {
@@ -138,11 +147,41 @@ export default function LobbySidebar() {
         </ul>
       )}
 
+      {!gameStarted && user.role === "player" && !hasJoinedBattlefield && (
+        <>
+          {/* Only allow joining battlefield if Samuel (host) is present */}
+          {isHost ? (
+            <button
+              className="join-battlefield-button"
+              onClick={handleJoinBattlefield}
+            >
+              Join Battlefield
+            </button>
+          ) : (
+            <p>You cannot join the game until Samuel (host) has joined.</p>
+          )}
+        </>
+      )}
+
+      {!gameStarted && user.role === "host" && isHost && (
+        <button
+          className="start-game-button"
+          onClick={handleStartGame}
+          disabled={players.filter((p) => p.role === "player").length === 0}
+          title={
+            players.filter((p) => p.role === "player").length === 0
+              ? "No players to start the game"
+              : ""
+          }
+        >
+          Start Game
+        </button>
+      )}
+
       <button className="leave-button" onClick={handleLeave}>
         Leave Lobby
       </button>
 
-      {/* Only show "Clear Lobby" button if user is Samuel and is the host */}
       {user.role === "host" &&
         user.name.trim().toLowerCase() === "samuel" &&
         isHost && (
@@ -158,11 +197,6 @@ export default function LobbySidebar() {
             Clear Lobby
           </button>
         )}
-
-      {/* Display message if players are blocked from joining */}
-      {!isHost && user.role === "player" && (
-        <p>You cannot join the game until Samuel (host) has joined.</p>
-      )}
     </div>
   );
 }

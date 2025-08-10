@@ -70,3 +70,92 @@
   box-sizing: border-box;
   padding: 1rem;
 }
+
+/* Player tokens (positioned inside the grid) */
+.player-token {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  color: white;
+  font-weight: bold;
+  font-size: 12px;
+  text-align: center;
+  line-height: 20px;
+  pointer-events: none;
+  -webkit-user-select: none;
+  user-select: none;
+  z-index: 3;
+  overflow: hidden;
+  background-color: gray;
+  background-repeat: no-repeat;
+}
+
+/* Optional: highlight border or add a pulse for current turn */
+.player-token.active {
+  box-shadow: 0 0 6px 2px #4caf50;
+}
+
+.controls {
+  position: fixed;
+  bottom: 10px;
+  left: 10px;
+  background: #fff;
+  padding: 8px;
+  border-radius: 4px;
+  box-shadow: 0 0 6px rgba(0,0,0,0.2);
+  z-index: 10;
+}
+
+.controls button {
+  margin: 0 4px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+
+/* Flashlight Mask */
+.flashlight-mask {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.95); /* nearly opaque */
+  z-index: 2;
+  pointer-events: none;
+}
+
+.flashlight-circle {
+  position: absolute;
+  width: 60px; /* 3 squares x 20px */
+  height: 60px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(0, 0, 0, 0) 40%, rgba(0, 0, 0, 0.95) 80%);
+  pointer-events: none;
+  mix-blend-mode: destination-out;
+}
+
+/* Optional: transition for fade-in */
+.flashlight-mask {
+  transition: opacity 1s ease;
+}
+
+/* Start Game Overlay */
+.start-game-overlay {
+  position: absolute;
+  z-index: 5;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.start-game-overlay button {
+  padding: 1rem 2rem;
+  font-size: 1.2rem;
+  cursor: pointer;
+}

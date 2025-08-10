@@ -13,7 +13,6 @@ const imagesContext = require.context(
   false,
   /\.(png|jpe?g|svg)$/
 );
-
 const images = importAllImages(imagesContext);
 
 export default function App() {
@@ -42,9 +41,11 @@ export default function App() {
     <div className="app-container">
       <div className="main-layout">
         <LobbySidebar />
+
         <Battlefield background={selectedBackground} />
+
         <BackgroundSidebar
-          selectedBackground={selectedBackground} // Pass current background here
+          selectedBackground={selectedBackground}
           onSelect={setSelectedBackground}
         />
       </div>
