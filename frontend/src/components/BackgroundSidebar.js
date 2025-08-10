@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { importAllImages } from "../utils/importAllImages";
 import "./BackgroundSidebar.css";
 
-// Import all images from the images folder
+// Import all image files from the /images folder
 const images = importAllImages(
   require.context("../images", false, /\.(png|jpe?g|svg)$/)
 );
@@ -24,17 +24,25 @@ export default function BackgroundSidebar({ selectedBackground, onSelect }) {
 
       {/* Sidebar */}
       <div className={`background-sidebar ${isSidebarVisible ? "active" : ""}`}>
-        {Object.values(images).map((src, i) => (
-          <img
-            key={i}
-            src={src}
-            alt={`Background ${i + 1}`}
-            className={`background-thumb ${
-              selectedBackground === src ? "selected" : ""
-            }`}
-            onClick={() => onSelect(src)}
-          />
-        ))}
+        {Object.entries(images).map(([fileName, src], i) => {
+          const displayName = fileName
+            .replace(/\.[^/.]+$/, "")     // Remove extension
+            .replace(/[-_]/g, " ")        // Replace dashes/underscores with spaces
+            .trim();
+
+          return (
+            <img
+              key={i}
+              src={src}
+              alt={displayName}
+              title={displayName}          // Tooltip on hover
+              className={`background-thumb ${
+                selectedBackground === src ? "selected" : ""
+              }`}
+              onClick={() => onSelect(src)}
+            />
+          );
+        })}
       </div>
     </>
   );
