@@ -18,6 +18,9 @@ const io = new Server(server, {
 // Structure: rooms = { roomName: { socketId: { name, role, socketId } } }
 const rooms = {};
 
+// Track battlefield players per room: { roomName: Set of socketIds }
+const battlefieldPlayers = {};
+
 // Helper: emit if Samuel (host) is present in the room
 function emitHostStatus(room) {
   if (!rooms[room]) return;
@@ -32,6 +35,11 @@ io.on("connection", (socket) => {
   console.log("New client connected:", socket.id);
 
   socket.on("joinRoom", ({ room, user }) => {
+    if (!room || !user) {
+      socket.emit("joinError", "Missing room or user information.");
+      return;
+    }
+
     if (!rooms[room]) rooms[room] = {};
 
     const currentUsers = Object.values(rooms[room]);
@@ -77,7 +85,8 @@ io.on("connection", (socket) => {
     // 5. Name taken check (any user)
     const nameTakenByOther = currentUsers.some(
       (u) =>
-        u.name.trim().toLowerCase() === normalizedName && u.socketId !== socket.id
+        u.name.trim().toLowerCase() === normalizedName &&
+        u.socketId !== socket.id
     );
     if (nameTakenByOther) {
       socket.emit("joinError", `User name "${user.name}" is already taken.`);
@@ -122,6 +131,82 @@ io.on("connection", (socket) => {
     emitHostStatus(room);
   });
 
+  // Handle player joining the battlefield
+  // Handle player joining the battlefield
+  socket.on("joinBattleField", (data) => {
+    if (!data || !data.room) {
+      console.warn("joinBattleField called with invalid data:", data);
+      socket.emit("message", "Invalid battlefield join request.");
+      return;
+    }
+
+    const room = data.room;
+
+    if (!rooms[room] || !rooms[room][socket.id]) {
+      socket.emit("message", "You must join the lobby room first.");
+      return;
+    }
+
+    if (!battlefieldPlayers[room]) {
+      battlefieldPlayers[room] = new Set();
+    }
+
+    battlefieldPlayers[room].add(socket.id);
+    console.log("Battlefield players after joining:", battlefieldPlayers[room]);
+
+    const battlefieldUsers = Array.from(battlefieldPlayers[room])
+      .map((id) => rooms[room][id])
+      .filter(Boolean); // filter out any undefined users
+
+    console.log("Emitting battlefield players:", battlefieldUsers);
+    io.to(room).emit("battlefieldPlayers", battlefieldUsers);
+    io.to(room).emit(
+      "message",
+      `${rooms[room][socket.id].name} joined the battlefield.`
+    );
+  });
+
+  // Handle game start event
+  // Handle game start event
+  socket.on("startGame", (data) => {
+    if (!data || !data.room) {
+      console.warn("startGame called with invalid data:", data);
+      socket.emit("message", "Invalid game start request.");
+      return;
+    }
+
+    const room = data.room;
+
+    if (!rooms[room] || !rooms[room][socket.id]) {
+      socket.emit("message", "You must join the lobby room first.");
+      return;
+    }
+
+    const user = rooms[room][socket.id];
+
+    if (user.role !== "host" || user.name.trim().toLowerCase() !== "samuel") {
+      socket.emit("message", "Only host Samuel can start the game.");
+      return;
+    }
+
+    io.to(room).emit("gameStarted", { startedBy: user.name });
+
+    console.log(`Game started in room ${room} by host Samuel.`);
+
+    // Emit battlefield players even after the game starts
+    if (battlefieldPlayers[room]) {
+      const battlefieldUsers = Array.from(battlefieldPlayers[room])
+        .map((id) => rooms[room][id])
+        .filter(Boolean);
+
+      console.log(
+        "Emitting battlefield players at game start:",
+        battlefieldUsers
+      );
+      io.to(room).emit("battlefieldPlayers", battlefieldUsers);
+    }
+  });
+
   socket.on("clearRoom", (room) => {
     if (rooms[room]) {
       const socketsInRoom = Object.keys(rooms[room]);
@@ -134,6 +219,7 @@ io.on("connection", (socket) => {
       });
 
       delete rooms[room];
+      delete battlefieldPlayers[room];
 
       io.to(room).emit("playerList", []);
       io.to(room).emit("message", `Room ${room} has been cleared.`);
@@ -148,6 +234,25 @@ io.on("connection", (socket) => {
     }
   });
 
+  // Handle leaving the battlefield
+  socket.on("leaveBattlefield", ({ room }) => {
+    if (!rooms[room] || !rooms[room][socket.id]) return;
+
+    if (battlefieldPlayers[room]) {
+      battlefieldPlayers[room].delete(socket.id);
+
+      const battlefieldUsers = Array.from(battlefieldPlayers[room])
+        .map((id) => rooms[room][id])
+        .filter(Boolean);
+
+      io.to(room).emit("battlefieldPlayers", battlefieldUsers);
+      io.to(room).emit(
+        "message",
+        `${rooms[room][socket.id].name} returned to the lobby.`
+      );
+    }
+  });
+
   socket.on("disconnect", () => {
     console.log("Client disconnected:", socket.id);
 
@@ -156,17 +261,27 @@ io.on("connection", (socket) => {
         const user = rooms[room][socket.id];
         delete rooms[room][socket.id];
 
-        console.log(`Socket ${socket.id} ("${user.name}") left room ${room}`);
-        console.log("Current users in room:", Object.values(rooms[room]));
+        if (battlefieldPlayers[room]) {
+          battlefieldPlayers[room].delete(socket.id);
 
+          const battlefieldUsers = Array.from(battlefieldPlayers[room])
+            .map((id) => rooms[room][id])
+            .filter(Boolean);
+
+          io.to(room).emit("battlefieldPlayers", battlefieldUsers);
+          io.to(room).emit(
+            "message",
+            `${rooms[room][socket.id].name} left the battlefield.`
+          );
+        }
+
+        console.log(`Socket ${socket.id} ("${user.name}") left room ${room}`);
         io.to(room).emit("playerList", Object.values(rooms[room]));
         io.to(room).emit("message", `User ${user.name} left the room`);
-
-        // Emit host status update after user leaves
         emitHostStatus(room);
       }
     }
-  });
+  }); 
 });
 
 const PORT = process.env.PORT || 5000;

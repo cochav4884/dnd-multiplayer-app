@@ -84,3 +84,17 @@
   background: #444;
   border-radius: 3px;
 }
+
+@media (max-width: 768px) {
+  .main-layout {
+    grid-template-columns: 1fr; /* Single column for smaller screens */
+    height: auto; /* Let the height adjust based on content */
+  }
+  .lobby-sidebar, .background-sidebar {
+    width: 100%;
+    padding: 1rem 0.5rem;
+  }
+  .battlefield {
+    height: auto;
+  }
+}

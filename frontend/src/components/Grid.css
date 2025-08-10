@@ -27,7 +27,10 @@
 /* Background image fills the grid container */
 .grid-background-image {
   position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -40,11 +43,12 @@
 /* Grid overlay on top */
 .grid-overlay {
   position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background-image:
-  linear-gradient(rgba(255, 0, 0, 0.6) 1px, transparent 1px),
-  linear-gradient(90deg, rgba(255, 0, 0, 0.6) 1px, transparent 1px);
-
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: linear-gradient(rgba(255, 0, 0, 0.6) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 0, 0, 0.6) 1px, transparent 1px);
 
   background-size: 20px 20px;
   filter: drop-shadow(0 0 1px rgba(255, 255, 255, 0.5));
@@ -89,11 +93,13 @@
   overflow: hidden;
   background-color: gray;
   background-repeat: no-repeat;
+  transition: top 0.2s ease, left 0.2s ease;
 }
 
 /* Optional: highlight border or add a pulse for current turn */
 .player-token.active {
   box-shadow: 0 0 6px 2px #4caf50;
+  border: 2px solid #00ff00;
 }
 
 .controls {
@@ -103,7 +109,7 @@
   background: #fff;
   padding: 8px;
   border-radius: 4px;
-  box-shadow: 0 0 6px rgba(0,0,0,0.2);
+  box-shadow: 0 0 6px rgba(0, 0, 0, 0.2);
   z-index: 10;
 }
 
@@ -120,9 +126,15 @@
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.95); /* nearly opaque */
+  background-color: rgba(0, 0, 0, 0.95); /* near opaque black */
   z-index: 2;
   pointer-events: none;
+  opacity: 0; /* initially hidden */
+  transition: opacity 1s ease;
+}
+
+.flashlight-mask.active {
+  opacity: 1; /* make it visible after the game starts */
 }
 
 .flashlight-circle {
@@ -130,14 +142,13 @@
   width: 60px; /* 3 squares x 20px */
   height: 60px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(0, 0, 0, 0) 40%, rgba(0, 0, 0, 0.95) 80%);
+  background: radial-gradient(
+    circle,
+    rgba(0, 0, 0, 0) 40%,
+    rgba(0, 0, 0, 0.95) 80%
+  );
   pointer-events: none;
   mix-blend-mode: destination-out;
-}
-
-/* Optional: transition for fade-in */
-.flashlight-mask {
-  transition: opacity 1s ease;
 }
 
 /* Start Game Overlay */
@@ -148,7 +159,7 @@
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0,0,0,0.8);
+  background: rgba(0, 0, 0, 0.8);
   display: flex;
   justify-content: center;
   align-items: center;

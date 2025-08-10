@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import "./Grid.css";
 
-export default function Grid({ children }) {
+export default function Grid({ children, isHost = true }) {
   const [cols, setCols] = useState(0);
   const [rows, setRows] = useState(0);
   const [gameStarted, setGameStarted] = useState(false);
@@ -14,7 +14,7 @@ export default function Grid({ children }) {
       row: 0,
       col: 0,
       color: "#ff4081",
-      avatar: null, // e.g. "/avatars/alice.png"
+      avatar: null,
     },
     {
       id: 2,
@@ -46,7 +46,7 @@ export default function Grid({ children }) {
     return () => window.removeEventListener("resize", updateGrid);
   }, []);
 
-  // Move a player by delta row/col
+  // Move a player by delta row/col, adding the isOccupied check
   const movePlayer = (playerId, deltaRow, deltaCol) => {
     setPlayers((prevPlayers) =>
       prevPlayers.map((player) => {
@@ -55,16 +55,28 @@ export default function Grid({ children }) {
         let newRow = player.row + deltaRow;
         let newCol = player.col + deltaCol;
 
+        // Ensure the player doesn't move outside the grid
         newRow = Math.max(0, Math.min(rows - 1, newRow));
         newCol = Math.max(0, Math.min(cols - 1, newCol));
 
-        return { ...player, row: newRow, col: newCol };
+        // Check if the new position is occupied by another player
+        const isOccupied = prevPlayers.some(
+          (p) => p.row === newRow && p.col === newCol && p.id !== playerId
+        );
+
+        // If the position is not occupied, move the player
+        if (!isOccupied) {
+          return { ...player, row: newRow, col: newCol };
+        }
+        return player; // No change if occupied
       })
     );
   };
 
   // Listen for keyboard input
   useEffect(() => {
+    if (!gameStarted) return; // Only listen if game started
+
     const handleKeyDown = (e) => {
       const key = e.key.toLowerCase();
       let moved = false;
@@ -90,10 +102,23 @@ export default function Grid({ children }) {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [activePlayerId, rows, cols]);
+  }, [activePlayerId, rows, cols, gameStarted]);
+
+  // Handle End Game: resets state to initial
+  const endGame = () => {
+    setGameStarted(false);
+    // Optionally reset players positions here or other states
+  };
 
   return (
     <div className="grid-container">
+      {/* Background image */}
+      <img
+        src="../images"
+        alt="Battlefield"
+        className="grid-background-image"
+      />
+
       {/* Game Start Overlay */}
       {!gameStarted && (
         <div className="start-game-overlay">
@@ -102,20 +127,18 @@ export default function Grid({ children }) {
       )}
 
       {/* Flashlight Mask */}
-      {gameStarted && (
-        <div className="flashlight-mask">
-          {players.map((player) => (
-            <div
-              key={player.id}
-              className="flashlight-circle"
-              style={{
-                top: `${player.row * 20 - 20}px`, // Center over 3x3 area
-                left: `${player.col * 20 - 20}px`,
-              }}
-            />
-          ))}
-        </div>
-      )}
+      <div className={`flashlight-mask ${gameStarted ? "active" : ""}`}>
+        {players.map((player) => (
+          <div
+            key={player.id}
+            className="flashlight-circle"
+            style={{
+              top: `${player.row * 20 - 20}px`,
+              left: `${player.col * 20 - 20}px`,
+            }}
+          />
+        ))}
+      </div>
 
       {/* Grid lines */}
       <div
@@ -136,7 +159,9 @@ export default function Grid({ children }) {
         {players.map((player) => (
           <div
             key={player.id}
-            className={`player-token ${player.id === activePlayerId ? "active" : ""}`}
+            className={`player-token ${
+              player.id === activePlayerId ? "active" : ""
+            }`}
             title={player.name}
             style={{
               top: `${player.row * 20}px`,
@@ -153,6 +178,13 @@ export default function Grid({ children }) {
 
         {children}
       </div>
+
+      {/* Controls for host */}
+      {isHost && gameStarted && (
+        <div className="controls">
+          <button onClick={endGame}>End Game</button>
+        </div>
+      )}
     </div>
   );
 }

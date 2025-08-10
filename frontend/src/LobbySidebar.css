@@ -40,3 +40,39 @@
   cursor: pointer;
   border-radius: 4px;
 }
+
+.clear-lobby-button {
+  width: 100%;
+  padding: 10px;
+  margin-top: 15px;
+  background-color: #e67e22; /* orange */
+  border: none;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.end-game-button {
+  width: 100%;
+  padding: 10px;
+  margin-top: 15px;
+  background-color: #3700ff; /* dark blue */
+  border: none;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.back-to-lobby-button {
+  width: 100%;
+  padding: 10px;
+  margin-top: 15px;
+  background-color: #9b59b6; /* purple */
+  border: none;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+  border-radius: 4px;
+}
