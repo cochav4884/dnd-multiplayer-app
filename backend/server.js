@@ -18,6 +18,16 @@ const io = new Server(server, {
 // Structure: rooms = { roomName: { socketId: { name, role, socketId } } }
 const rooms = {};
 
+// Helper: emit if Samuel (host) is present in the room
+function emitHostStatus(room) {
+  if (!rooms[room]) return;
+  const currentUsers = Object.values(rooms[room]);
+  const samuelHost = currentUsers.find(
+    (u) => u.role === "host" && u.name.trim().toLowerCase() === "samuel"
+  );
+  io.to(room).emit("hostStatus", !!samuelHost);
+}
+
 io.on("connection", (socket) => {
   console.log("New client connected:", socket.id);
 
@@ -27,34 +37,63 @@ io.on("connection", (socket) => {
     const currentUsers = Object.values(rooms[room]);
     const hosts = currentUsers.filter((u) => u.role === "host");
     const players = currentUsers.filter((u) => u.role === "player");
-
-    // Normalize name for case-insensitive comparison
     const normalizedName = user.name.trim().toLowerCase();
 
-    // Check for duplicate name (different socket)
+    // 1. Only Samuel can be host
+    if (user.role === "host" && normalizedName !== "samuel") {
+      socket.emit("joinError", "Only Samuel can be the host.");
+      return;
+    }
+
+    // 2. Prevent any other Samuel if Samuel already host
+    const samuelHost = hosts.find(
+      (u) => u.name.trim().toLowerCase() === "samuel"
+    );
+    if (samuelHost) {
+      if (normalizedName === "samuel" && socket.id !== samuelHost.socketId) {
+        socket.emit(
+          "joinError",
+          'Another "Samuel" is already the host. You cannot join.'
+        );
+        return;
+      }
+    }
+
+    // 3. Players cannot join before Samuel (host)
+    if (user.role === "player" && !samuelHost) {
+      socket.emit(
+        "joinError",
+        "Samuel (host) must join before players can join."
+      );
+      return;
+    }
+
+    // 4. Max players limit
+    if (user.role === "player" && players.length >= 11) {
+      socket.emit("joinError", "Lobby is full for players.");
+      return;
+    }
+
+    // 5. Name taken check (any user)
     const nameTakenByOther = currentUsers.some(
       (u) =>
-        u.name.trim().toLowerCase() === normalizedName &&
-        u.socketId !== socket.id
+        u.name.trim().toLowerCase() === normalizedName && u.socketId !== socket.id
     );
     if (nameTakenByOther) {
       socket.emit("joinError", `User name "${user.name}" is already taken.`);
       return;
     }
 
-    if (user.role === "host") {
-      if (normalizedName !== "samuel") {
-        socket.emit("joinError", "Only Samuel can be the host.");
-        return;
-      }
-
-      // Remove any previous Samuel host entries BEFORE adding new one
+    // 6. Remove previous Samuel host on reconnect (if host)
+    if (user.role === "host" && normalizedName === "samuel") {
       for (const [id, u] of Object.entries(rooms[room])) {
         if (
           u.role === "host" &&
           u.name.trim().toLowerCase() === "samuel" &&
           id !== socket.id
         ) {
+          const oldSocket = io.sockets.sockets.get(id);
+          if (oldSocket) oldSocket.disconnect(true);
           delete rooms[room][id];
           io.to(room).emit(
             "message",
@@ -64,26 +103,29 @@ io.on("connection", (socket) => {
       }
     }
 
-    // Enforce max 10 players
-    if (user.role === "player" && players.length >= 10) {
-      socket.emit("joinError", "Lobby is full for players.");
-      return;
-    }
-
-    // Add or update user AFTER cleanup and checks
+    // Add user to room
     rooms[room][socket.id] = { ...user, socketId: socket.id };
     socket.join(room);
 
-    console.log(`Socket ${socket.id} joined room ${room}`);
-    io.to(room).emit("playerList", Object.values(rooms[room]));
+    console.log(
+      `Socket ${socket.id} joined room ${room} as "${user.name}" with role "${user.role}"`
+    );
+    console.log(`Users currently in room ${room}:`, Object.values(rooms[room]));
+
+    // Emit updates
+    const updatedPlayers = Object.values(rooms[room]);
+    socket.emit("playerList", updatedPlayers);
+    socket.to(room).emit("playerList", updatedPlayers);
     io.to(room).emit("message", `User ${user.name} joined the room`);
+
+    // Emit host status update
+    emitHostStatus(room);
   });
 
   socket.on("clearRoom", (room) => {
     if (rooms[room]) {
       const socketsInRoom = Object.keys(rooms[room]);
 
-      // Emit 'forceLeave' event to all sockets in the room
       socketsInRoom.forEach((socketId) => {
         const sock = io.sockets.sockets.get(socketId);
         if (sock) {
@@ -91,14 +133,12 @@ io.on("connection", (socket) => {
         }
       });
 
-      // Remove the room data from server
       delete rooms[room];
 
-      // Emit updates to room (empty player list, message)
       io.to(room).emit("playerList", []);
       io.to(room).emit("message", `Room ${room} has been cleared.`);
+      io.to(room).emit("hostStatus", false);
 
-      // Disconnect all sockets forcibly so clients are forced to reconnect if they want
       socketsInRoom.forEach((socketId) => {
         const sock = io.sockets.sockets.get(socketId);
         if (sock) {
@@ -116,11 +156,14 @@ io.on("connection", (socket) => {
         const user = rooms[room][socket.id];
         delete rooms[room][socket.id];
 
-        console.log(`Socket ${socket.id} left room ${room}`);
+        console.log(`Socket ${socket.id} ("${user.name}") left room ${room}`);
         console.log("Current users in room:", Object.values(rooms[room]));
 
         io.to(room).emit("playerList", Object.values(rooms[room]));
         io.to(room).emit("message", `User ${user.name} left the room`);
+
+        // Emit host status update after user leaves
+        emitHostStatus(room);
       }
     }
   });
