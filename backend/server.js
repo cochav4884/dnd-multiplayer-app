@@ -132,16 +132,7 @@ io.on("connection", (socket) => {
   });
 
   // Handle player joining the battlefield
-  // Handle player joining the battlefield
-  socket.on("joinBattleField", (data) => {
-    if (!data || !data.room) {
-      console.warn("joinBattleField called with invalid data:", data);
-      socket.emit("message", "Invalid battlefield join request.");
-      return;
-    }
-
-    const room = data.room;
-
+  socket.on("joinBattleField", ({ room }) => {
     if (!rooms[room] || !rooms[room][socket.id]) {
       socket.emit("message", "You must join the lobby room first.");
       return;
@@ -152,85 +143,83 @@ io.on("connection", (socket) => {
     }
 
     battlefieldPlayers[room].add(socket.id);
-    console.log("Battlefield players after joining:", battlefieldPlayers[room]);
 
     const battlefieldUsers = Array.from(battlefieldPlayers[room])
       .map((id) => rooms[room][id])
-      .filter(Boolean); // filter out any undefined users
+      .filter(Boolean);
 
-    console.log("Emitting battlefield players:", battlefieldUsers);
     io.to(room).emit("battlefieldPlayers", battlefieldUsers);
-    io.to(room).emit(
-      "message",
-      `${rooms[room][socket.id].name} joined the battlefield.`
-    );
+    io.to(room).emit("playerJoinedBattlefield", rooms[room][socket.id]); // 👈 emits just the joiner for LobbySidebar.js
   });
 
   // Handle game start event
-  // Handle game start event
-  socket.on("startGame", (data) => {
-    if (!data || !data.room) {
-      console.warn("startGame called with invalid data:", data);
-      socket.emit("message", "Invalid game start request.");
-      return;
-    }
-
-    const room = data.room;
-
+  socket.on("startGame", ({ room }) => {
     if (!rooms[room] || !rooms[room][socket.id]) {
       socket.emit("message", "You must join the lobby room first.");
       return;
     }
 
     const user = rooms[room][socket.id];
-
     if (user.role !== "host" || user.name.trim().toLowerCase() !== "samuel") {
       socket.emit("message", "Only host Samuel can start the game.");
       return;
     }
 
+    // ✅ Clear battlefield players at the start of a new game
+    battlefieldPlayers[room] = new Set();
+
+    // ✅ Just announce the game start — don't auto-join anyone
     io.to(room).emit("gameStarted", { startedBy: user.name });
 
     console.log(`Game started in room ${room} by host Samuel.`);
-
-    // Emit battlefield players even after the game starts
-    if (battlefieldPlayers[room]) {
-      const battlefieldUsers = Array.from(battlefieldPlayers[room])
-        .map((id) => rooms[room][id])
-        .filter(Boolean);
-
-      console.log(
-        "Emitting battlefield players at game start:",
-        battlefieldUsers
-      );
-      io.to(room).emit("battlefieldPlayers", battlefieldUsers);
-    }
   });
 
-  socket.on("clearRoom", (room) => {
-    if (rooms[room]) {
-      const socketsInRoom = Object.keys(rooms[room]);
+  // Handle game end event
+  socket.on("endGame", ({ room }) => {
+    if (!rooms[room] || !rooms[room][socket.id]) {
+      socket.emit("message", "You must join the lobby room first.");
+      return;
+    }
 
-      socketsInRoom.forEach((socketId) => {
-        const sock = io.sockets.sockets.get(socketId);
-        if (sock) {
-          sock.emit("forceLeave", "Lobby has been cleared by host.");
-        }
-      });
+    const user = rooms[room][socket.id];
+    if (user.role !== "host" || user.name.trim().toLowerCase() !== "samuel") {
+      socket.emit("message", "Only host Samuel can end the game.");
+      return;
+    }
 
-      delete rooms[room];
-      delete battlefieldPlayers[room];
+    io.to(room).emit("gameEnded", { endedBy: user.name });
 
-      io.to(room).emit("playerList", []);
-      io.to(room).emit("message", `Room ${room} has been cleared.`);
-      io.to(room).emit("hostStatus", false);
+    console.log(`Game ended in room ${room} by host Samuel.`);
+  });
 
-      socketsInRoom.forEach((socketId) => {
-        const sock = io.sockets.sockets.get(socketId);
-        if (sock) {
-          sock.disconnect(true);
-        }
-      });
+  // Remove a player from the room by host
+  socket.on("removePlayer", ({ room, socketIdToRemove }) => {
+    if (!rooms[room]) return;
+
+    const user = rooms[room][socket.id];
+    if (!user || user.role !== "host" || user.name.trim().toLowerCase() !== "samuel") {
+      socket.emit("message", "Only host Samuel can remove players.");
+      return;
+    }
+
+    if (rooms[room][socketIdToRemove]) {
+      // Notify the player being removed
+      const playerSocket = io.sockets.sockets.get(socketIdToRemove);
+      if (playerSocket) {
+        playerSocket.emit("removedFromLobby", "You have been removed from the lobby by the host.");
+        playerSocket.disconnect(true);
+      }
+      delete rooms[room][socketIdToRemove];
+
+      // Also remove from battlefield players if present
+      if (battlefieldPlayers[room]) {
+        battlefieldPlayers[room].delete(socketIdToRemove);
+      }
+
+      // Update everyone in the room
+      const updatedPlayers = Object.values(rooms[room]);
+      io.to(room).emit("playerList", updatedPlayers);
+      io.to(room).emit("message", "A player has been removed by the host.");
     }
   });
 
@@ -246,10 +235,7 @@ io.on("connection", (socket) => {
         .filter(Boolean);
 
       io.to(room).emit("battlefieldPlayers", battlefieldUsers);
-      io.to(room).emit(
-        "message",
-        `${rooms[room][socket.id].name} returned to the lobby.`
-      );
+      io.to(room).emit("playerLeftBattlefield", rooms[room][socket.id]); // 👈 emits just the leaver
     }
   });
 
@@ -271,7 +257,7 @@ io.on("connection", (socket) => {
           io.to(room).emit("battlefieldPlayers", battlefieldUsers);
           io.to(room).emit(
             "message",
-            `${rooms[room][socket.id].name} left the battlefield.`
+            `${user.name} left the battlefield.` // Fix here: user was undefined
           );
         }
 
@@ -281,7 +267,7 @@ io.on("connection", (socket) => {
         emitHostStatus(room);
       }
     }
-  }); 
+  });
 });
 
 const PORT = process.env.PORT || 5000;

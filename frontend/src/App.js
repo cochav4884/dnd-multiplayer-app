@@ -7,25 +7,23 @@ import Battlefield from "./components/Battlefield";
 import { importAllImages } from "./utils/importAllImages";
 import "./App.css";
 
-// Load all images from images folder
-const imagesContext = require.context(
-  "./images",
-  false,
-  /\.(png|jpe?g|svg)$/
-);
+// Load images from images folder
+const imagesContext = require.context("./images", false, /\.(png|jpe?g|svg)$/);
 const images = importAllImages(imagesContext);
 
 export default function App() {
   const { user } = useContext(UserContext);
   const [selectedBackground, setSelectedBackground] = useState(null);
 
-  // Log loaded images once component renders
-  console.log("Loaded images:", images);
+  // Shared states
+  const [gameStarted, setGameStarted] = useState(false);
+  const [hasJoinedBattlefield, setHasJoinedBattlefield] = useState(false);
 
-  // Set default background when user logs in and images are loaded
   useEffect(() => {
     if (user && Object.values(images).length > 0) {
       setSelectedBackground(Object.values(images)[0]);
+    } else {
+      setSelectedBackground("path/to/default/image.jpg"); // fallback image path
     }
   }, [user]);
 
@@ -40,9 +38,25 @@ export default function App() {
   return (
     <div className="app-container">
       <div className="main-layout">
-        <LobbySidebar />
+        {/* LobbySidebar visible if game not started or user not on battlefield */}
+        {(!gameStarted || (gameStarted && !hasJoinedBattlefield)) && (
+          <LobbySidebar
+            setGameStarted={setGameStarted}
+            setHasJoinedBattlefield={setHasJoinedBattlefield}
+            gameStarted={gameStarted}
+            hasJoinedBattlefield={hasJoinedBattlefield}
+          />
+        )}
 
-        <Battlefield background={selectedBackground} />
+        {/* Battlefield visible only when game started and user joined battlefield */}
+        {gameStarted && hasJoinedBattlefield && (
+          <Battlefield
+            user={user}
+            background={selectedBackground}
+            setHasJoinedBattlefield={setHasJoinedBattlefield}
+            setGameStarted={setGameStarted}
+          />
+        )}
 
         <BackgroundSidebar
           selectedBackground={selectedBackground}

@@ -4,13 +4,19 @@ import { socket } from "./socket";
 import { useNavigate } from "react-router-dom";
 import "./LobbySidebar.css";
 
-const ROOM = "game-room-1"; // ✅ Consistent room name used in all emits
+const ROOM = "game-room-1";
 
-// Custom hook to join socket room once per user session
-function useSocketJoin(user, room = "game-room-1") {
-  const hasJoined = useRef(false);
+export default function LobbySidebar({
+  setGameStarted,
+  setHasJoinedBattlefield,
+  gameStarted,
+  hasJoinedBattlefield,
+}) {
+  const { user, setUser } = useContext(UserContext);
+  const [players, setPlayers] = useState([]);
+  const [isHost, setIsHost] = useState(false);
   const navigate = useNavigate();
-  const { setUser } = useContext(UserContext);
+  const hasJoined = useRef(false);
 
   useEffect(() => {
     if (!user) return;
@@ -20,109 +26,55 @@ function useSocketJoin(user, room = "game-room-1") {
     }
 
     if (!hasJoined.current || !socket.connected) {
-      console.log("Emitting joinRoom for user:", user);
-      socket.emit("joinRoom", { room, user });
+      socket.emit("joinRoom", { room: ROOM, user });
       hasJoined.current = true;
     }
 
+    const onPlayerList = (list) => {
+      setPlayers(list);
+    };
+
+    const onHostStatus = (status) => {
+      setIsHost(status);
+    };
+
     const onJoinError = (message) => {
-      let friendlyMessage = message;
-
-      if (message === 'Another "Samuel" is already the host. You cannot join.') {
-        friendlyMessage = "Lobby is full for hosts.";
-      } else if (message === "Only Samuel can be the host.") {
-        friendlyMessage = "You must be Samuel to host the lobby.";
-      } else if (message === "Samuel (host) must join before players can join.") {
-        friendlyMessage = "You cannot join until Samuel (host) has joined.";
-      }
-
-      alert(friendlyMessage);
+      alert(message);
       setUser(null);
       socket.disconnect();
       navigate("/");
     };
 
+    const onGameStarted = () => {
+      setGameStarted(true);
+    };
+
+    const onGameEnded = () => {
+      setGameStarted(false);
+      setHasJoinedBattlefield(false);
+    };
+
+    socket.on("playerList", onPlayerList);
+    socket.on("hostStatus", onHostStatus);
     socket.on("joinError", onJoinError);
+    socket.on("gameStarted", onGameStarted);
+    socket.on("gameEnded", onGameEnded);
 
     const handleDisconnect = () => {
-      console.log("Socket disconnected.");
       hasJoined.current = false;
     };
 
     socket.on("disconnect", handleDisconnect);
 
     return () => {
-      socket.off("joinError", onJoinError);
-      socket.off("disconnect", handleDisconnect);
-    };
-  }, [user, room, navigate, setUser]);
-}
-
-export default function LobbySidebar() {
-  const { user, setUser } = useContext(UserContext);
-  const [players, setPlayers] = useState([]);
-  const [isHost, setIsHost] = useState(false);
-  const [gameStarted, setGameStarted] = useState(false);
-  const [hasJoinedBattlefield, setHasJoinedBattlefield] = useState(false);
-  const [battlefieldPlayers, setBattlefieldPlayers] = useState([]); // Store players in battlefield
-  const navigate = useNavigate();
-
-  useSocketJoin(user);
-
-  useEffect(() => {
-    const onPlayerList = (list) => {
-      console.log("Received player list:", list);
-      setPlayers(list);
-    };
-
-    const onHostStatus = (status) => {
-      console.log("Host status received:", status);
-      setIsHost(status);
-    };
-
-    const onGameStarted = () => {
-      console.log("Game started");
-      setGameStarted(true);
-    };
-
-    const onGameEnded = () => {
-      console.log("Game ended");
-      setGameStarted(false);
-      setHasJoinedBattlefield(false);
-    };
-
-    const onPlayerJoinedBattlefield = (player) => {
-      console.log("Player joined battlefield:", player);
-      setBattlefieldPlayers((prev) => [...prev, player]);
-      if (player.id === user.id) {
-        setHasJoinedBattlefield(true);
-      }
-    };
-
-    const onPlayerLeftBattlefield = (player) => {
-      console.log("Player left battlefield:", player);
-      setBattlefieldPlayers((prev) => prev.filter((p) => p.id !== player.id));
-      if (player.id === user.id) {
-        setHasJoinedBattlefield(false);
-      }
-    };
-
-    socket.on("playerList", onPlayerList);
-    socket.on("hostStatus", onHostStatus);
-    socket.on("gameStarted", onGameStarted);
-    socket.on("gameEnded", onGameEnded);
-    socket.on("playerJoinedBattlefield", onPlayerJoinedBattlefield);
-    socket.on("playerLeftBattlefield", onPlayerLeftBattlefield);
-
-    return () => {
       socket.off("playerList", onPlayerList);
       socket.off("hostStatus", onHostStatus);
+      socket.off("joinError", onJoinError);
       socket.off("gameStarted", onGameStarted);
       socket.off("gameEnded", onGameEnded);
-      socket.off("playerJoinedBattlefield", onPlayerJoinedBattlefield);
-      socket.off("playerLeftBattlefield", onPlayerLeftBattlefield);
+      socket.off("disconnect", handleDisconnect);
     };
-  }, [user]);
+  }, [user, navigate, setUser, setGameStarted, setHasJoinedBattlefield]);
 
   const handleLeave = () => {
     socket.disconnect();
@@ -130,34 +82,28 @@ export default function LobbySidebar() {
     navigate("/");
   };
 
-  const handleClearLobby = () => {
+  const handleRemovePlayer = (socketId) => {
     if (
       window.confirm(
-        "Are you sure you want to clear the lobby? This will remove all players."
+        "Are you sure you want to remove this player from the lobby?"
       )
     ) {
-      console.log("Clear lobby requested");
-      socket.emit("clearRoom", ROOM); // ✅ uses same ROOM variable
-      setPlayers([]);
-      setHasJoinedBattlefield(false);
-      setGameStarted(false);
+      socket.emit("removePlayer", { room: ROOM, socketIdToRemove: socketId });
     }
   };
 
   const handleJoinBattlefield = () => {
-    socket.emit("joinBattleField", { room: ROOM }); // ✅ FIXED spelling + structure
-    setHasJoinedBattlefield(true); // Local update to show the "Back to Lobby" button
+    socket.emit("joinBattleField", { room: ROOM });
+  };
+
+  const handleBackToLobby = () => {
+    socket.emit("leaveBattlefield", { room: ROOM });
+    setHasJoinedBattlefield(false);
   };
 
   const handleStartGame = () => {
-    socket.emit("startGame", { room: ROOM }); // ✅ FIXED structure
+    socket.emit("startGame", { room: ROOM });
     setGameStarted(true);
-  };
-
-  // This still won't work unless `leaveBattlefield` exists on the server
-  const handleBackToLobby = () => {
-    socket.emit("leaveBattlefield", { room: ROOM }); // Emit to server to leave battlefield
-    setHasJoinedBattlefield(false); // Update the state to hide the "Back to Lobby" button
   };
 
   const handleEndGame = () => {
@@ -169,6 +115,9 @@ export default function LobbySidebar() {
   if (!user) {
     return <p>Loading...</p>;
   }
+
+  // Store count of players who are role 'player' once
+  const playersCount = players.filter((p) => p.role === "player").length;
 
   return (
     <div className="lobby-sidebar">
@@ -182,86 +131,88 @@ export default function LobbySidebar() {
         <p>No one in the lobby yet.</p>
       ) : (
         <ul style={{ listStyle: "none", paddingLeft: 0 }}>
-          {players.map((p, i) => (
-            <li key={i}>
-              {p.name} — <em>{p.role}</em>
+          {players.map((p) => (
+            <li
+              key={p.socketId}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+              }}
+            >
+              <span>
+                {p.name} — <em>{p.role}</em>
+              </span>
+
+              <div>
+                {/* Remove button for host Samuel */}
+                {user.role === "host" &&
+                  user.name.trim().toLowerCase() === "samuel" &&
+                  isHost &&
+                  p.socketId !== socket.id && (
+                    <button
+                      className="remove-player-button margin-left"
+                      onClick={() => handleRemovePlayer(p.socketId)}
+                      aria-label={`Remove player ${p.name}`}
+                    >
+                      Remove
+                    </button>
+                  )}
+
+                {/* Join Battlefield button ONLY for current player if game started and not joined battlefield */}
+                {p.socketId === socket.id &&
+                  gameStarted &&
+                  user.role === "player" &&
+                  !hasJoinedBattlefield && (
+                    <button
+                      className="join-battlefield-button margin-left"
+                      onClick={handleJoinBattlefield}
+                    >
+                      Join Battlefield
+                    </button>
+                  )}
+
+                {/* Back to Lobby button ONLY for current player if game started and has joined battlefield */}
+                {p.socketId === socket.id &&
+                  gameStarted &&
+                  user.role === "player" &&
+                  hasJoinedBattlefield && (
+                    <button
+                      className="back-to-lobby-button margin-left"
+                      onClick={handleBackToLobby}
+                    >
+                      Back to Lobby
+                    </button>
+                  )}
+              </div>
             </li>
           ))}
         </ul>
       )}
 
-      {/* Host does not join the battlefield */}
-      {!gameStarted && user.role === "player" && !hasJoinedBattlefield && (
-        <button
-          className="join-battlefield-button"
-          onClick={handleJoinBattlefield}
-        >
-          Join Battlefield
-        </button>
-      )}
-
-      {/* Show "Back to Lobby" only for players who have joined the battlefield */}
-      {gameStarted && user.role === "player" && hasJoinedBattlefield && (
-        <button
-          className="back-to-lobby-button"
-          onClick={handleBackToLobby}
-        >
-          Back to Lobby
-        </button>
-      )}
-
-      {/* Start game button for the host */}
+      {/* Start Game button */}
       {!gameStarted && user.role === "host" && isHost && (
         <button
           className="start-game-button"
           onClick={handleStartGame}
-          disabled={players.filter((p) => p.role === "player").length === 0}
-          title={
-            players.filter((p) => p.role === "player").length === 0
-              ? "No players to start the game"
-              : ""
-          }
+          disabled={playersCount === 0}
+          title={playersCount === 0 ? "No players to start the game" : ""}
         >
           Start Game
         </button>
       )}
 
-      {/* End game button for the host */}
+      {/* End Game button */}
       {gameStarted && user.role === "host" && isHost && (
-        <button
-          className="end-game-button"
-          onClick={handleEndGame}
-          style={{
-            marginTop: "1rem",
-            backgroundColor: "#001affff",
-            color: "white",
-          }}
-        >
+        <button className="end-game-button" onClick={handleEndGame}>
           End Game
         </button>
       )}
 
-      {/* Leave lobby button */}
+      {/* Leave Lobby button */}
       <button className="leave-button" onClick={handleLeave}>
         Leave Lobby
       </button>
-
-      {/* Clear the lobby for the host */}
-      {user.role === "host" &&
-        user.name.trim().toLowerCase() === "samuel" &&
-        isHost && (
-          <button
-            className="clear-lobby-button"
-            onClick={handleClearLobby}
-            style={{
-              marginTop: "1rem",
-              backgroundColor: "#ffd900ff",
-              color: "black",
-            }}
-          >
-            Clear Lobby
-          </button>
-        )}
     </div>
   );
 }
