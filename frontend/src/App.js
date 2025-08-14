@@ -1,4 +1,3 @@
-// src/App.js
 import React, { useContext, useState } from "react";
 import { UserContext } from "./UserContext";
 import Login from "./Login";
@@ -54,18 +53,18 @@ export default function App() {
 
       {/* Center: Battlefield */}
       <div className="battlefield-wrapper">
-        {/* Show sidebars for host/creator whenever battlefield is open */}
-        {(user.role === "host" || user.role === "creator") &&
-          battlefieldOpen &&
-          !isFullscreen && (
-            <>
+        {/* Host/creator sidebars on battlefield (only when not fullscreen) */}
+        {!isFullscreen &&
+          (user.role === "host" || user.role === "creator") &&
+          battlefieldOpen && (
+            <div className="host-sidebars">
               <BackgroundSidebar
                 userRole={user.role}
                 selectedBackground={selectedBackground}
                 onSelect={setSelectedBackground}
               />
               <AssetsSidebar userRole={user.role} />
-            </>
+            </div>
           )}
 
         {/* Battlefield canvas */}

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { importAllImages } from "../utils/importAllImages";
 import "./BackgroundSidebar.css";
 
@@ -7,23 +7,35 @@ const images = importAllImages(
   require.context("../images", false, /\.(png|jpe?g|svg)$/)
 );
 
-export default function BackgroundSidebar({ selectedBackground, onSelect, userRole }) {
+export default function BackgroundSidebar({
+  selectedBackground,
+  onSelect,
+  userRole,
+  isFullscreen,
+}) {
   const [isSidebarVisible, setSidebarVisible] = useState(false);
 
   // Only host or creator can see the sidebar
   if (userRole !== "host" && userRole !== "creator") return null;
 
+  // Hide sidebar automatically in fullscreen
+  useEffect(() => {
+    if (isFullscreen) setSidebarVisible(false);
+  }, [isFullscreen]);
+
   const toggleSidebar = () => setSidebarVisible((prev) => !prev);
 
   return (
     <>
-      <button
-        className="toggle-button"
-        onClick={toggleSidebar}
-        aria-label="Toggle Background Sidebar"
-      >
-        {isSidebarVisible ? "Close Backgrounds" : "Backgrounds"}
-      </button>
+      {!isFullscreen && (
+        <button
+          className="toggle-button"
+          onClick={toggleSidebar}
+          aria-label="Toggle Background Sidebar"
+        >
+          {isSidebarVisible ? "Close Backgrounds" : "Backgrounds"}
+        </button>
+      )}
 
       <div className={`background-sidebar ${isSidebarVisible ? "active" : ""}`}>
         {Object.entries(images).map(([fileName, src], i) => {

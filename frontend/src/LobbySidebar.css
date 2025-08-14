@@ -36,44 +36,103 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 5px;
+  gap: 5px;
 }
 
 .player-list li button {
-  padding: 3px 6px;
+  padding: 2px 6px;
   background-color: #f44336;
   border: none;
   border-radius: 4px;
   cursor: pointer;
   color: white;
+  font-size: 12px;
 }
 
 .player-list li button:hover {
   background-color: #d32f2f;
 }
 
-/* Lobby rules in center */
-.lobby-rules {
-  flex-grow: 1;
-  text-align: left;
-  margin: 10px 0;
-  background-color: rgba(0, 0, 0, 0.85);
-  padding: 10px;
-  border-radius: 5px;
-  overflow-y: auto;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+.player-list li.creator-host {
+  font-weight: bold;
+  color: #ffeb3b; /* Highlight Creator/Host */
 }
 
-.lobby-rules h3 {
-  margin-top: 0;
+/* Dice selection */
+.dice-selection {
+  margin-bottom: 10px;
+}
+
+.dice-thumbnails {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px;
+}
+
+.dice-thumbnails div {
+  cursor: pointer;
+}
+
+.dice-thumbnails .selected-dice {
+  border: 2px solid #4caf50;
+  transform: scale(1.1);
+}
+
+.roll-dice-btn {
+  padding: 5px 10px;
+  background-color: #ff9800;
+  border: none;
+  border-radius: 4px;
+  color: white;
+  cursor: pointer;
+  margin-bottom: 5px;
+}
+
+.roll-dice-btn:hover {
+  background-color: #fb8c00;
+}
+
+.dice-area {
+  text-align: center;
+  margin-top: auto;
+}
+
+.rolling-dice {
+  position: absolute;
+  width: 40px;
+  height: 40px;
+  pointer-events: none;
+  z-index: 1000;
+}
+
+.dice-result {
+  font-size: 12px;
+  color: #fff;
+  margin-top: 5px;
   text-align: center;
 }
 
-.lobby-rules ul {
-  padding-left: 20px;
-  margin: 0;
+/* Fullscreen toggle */
+.fullscreen-button {
+  width: 90%;
+  margin: 0 auto 10px;
+  padding: 8px 12px;
+  background-color: #2196f3;
+  border: none;
+  border-radius: 4px;
+  color: white;
+  cursor: pointer;
+  display: block;
+  position: sticky;
+  bottom: 0;
 }
 
-/* Controls (host & player buttons) */
+.fullscreen-button:hover {
+  background-color: #1976d2;
+}
+
+/* Lobby controls */
 .lobby-controls {
   display: flex;
   flex-direction: column;
@@ -96,145 +155,6 @@
   background-color: #1976d2;
 }
 
-/* Dice area with mini background */
-.dice-area {
-  text-align: center;
-  margin-top: auto;
-}
-
-.dice-bg-wrapper {
-  width: 100%;
-  height: 80px;
-  margin-bottom: 5px;
-  border-radius: 4px;
-  overflow: hidden;
-}
-
-.dice-bg {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.roll-dice-btn {
-  padding: 5px 10px;
-  background-color: #ff9800;
-  border: none;
-  border-radius: 4px;
-  color: white;
-  cursor: pointer;
-  margin-bottom: 5px;
-}
-
-.roll-dice-btn:hover {
-  background-color: #fb8c00;
-}
-
-.dice-result {
-  font-size: 12px;
-  margin: 0;
-  color: #fff;
-}
-
-/* Fullscreen toggle button */
-.fullscreen-button {
-  width: 90%;
-  margin: 0 auto 10px; /* bottom margin */
-  padding: 8px 12px;
-  background-color: #2196f3;
-  border: none;
-  border-radius: 4px;
-  color: white;
-  cursor: pointer;
-  display: block;
-  position: sticky;
-  bottom: 0;
-}
-
-.fullscreen-button:hover {
-  background-color: #1976d2;
-}
-
-/* Scrollbar for player list & rules */
-.player-list,
-.lobby-rules {
-  max-height: 200px;
-  overflow-y: auto;
-}
-
-/* Right-sidebars container (host only, visible after battlefield opens) */
-.right-sidebars {
-  position: fixed;
-  top: 100px; /* below top controls */
-  right: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  z-index: 101;
-}
-
-.sidebar-button-wrapper {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-}
-
-.sidebar-button-wrapper button {
-  background-color: #673ab7;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  padding: 6px 10px;
-  cursor: pointer;
-  font-size: 13px;
-  margin-bottom: 2px;
-}
-
-.sidebar-button-wrapper button:hover {
-  background-color: #512da8;
-}
-
-/* Dice thumbnails for selection */
-.dice-thumbnails {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 4px;
-  margin-bottom: 5px;
-}
-
-.dice-thumbnails img {
-  width: 40px;
-  height: 40px;
-  border: 2px solid transparent;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: transform 0.2s, border-color 0.2s;
-}
-
-.dice-thumbnails img.selected-dice {
-  border-color: #4caf50;
-  transform: scale(1.1);
-}
-
-/* Rolling dice on battlefield */
-.rolling-dice {
-  position: absolute;
-  width: 40px;
-  height: 40px;
-  pointer-events: none;
-  z-index: 1000;
-}
-
-/* Dice result display */
-.dice-result {
-  font-size: 12px;
-  color: #fff;
-  margin-top: 5px;
-  text-align: center;
-}
-
-
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .lobby-sidebar {
@@ -247,9 +167,5 @@
   .fullscreen-button {
     font-size: 12px;
     padding: 6px 10px;
-  }
-
-  .dice-bg-wrapper {
-    height: 60px;
   }
 }

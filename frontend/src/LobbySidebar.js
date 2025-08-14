@@ -1,7 +1,6 @@
-// src/components/LobbySidebar.js
 import React, { useState, useEffect } from "react";
-import { socket } from "./socket";
-import Dice from "./components/Dice";
+import { socket } from "../socket";
+import Dice from "./Dice";
 import "./LobbySidebar.css";
 
 export default function LobbySidebar({
@@ -28,7 +27,6 @@ export default function LobbySidebar({
 
   const diceTypes = ["d4", "d6", "d8", "d10", "d20", "d50"];
 
-  // Lobby updates
   useEffect(() => {
     socket.on("lobbyUpdate", (lobby) => {
       setCreator(lobby.creator);
@@ -115,24 +113,45 @@ export default function LobbySidebar({
     }
   };
 
+  // Determine display role for creator/host
+  let creatorRoleLabel = creator === host ? "Creator & Host" : "Creator";
+  const creatorName = creator;
+
   return (
     <div className={`lobby-sidebar ${isFullScreen ? "hidden" : ""}`}>
-      {/* Player list */}
+      {/* Player List */}
       <ul className="player-list">
-        {creator && host && creator === host && (
-          <li>{creator} (Creator & Host)</li>
+        {creatorName && (
+          <li
+            className={creator === host ? "creator-host" : ""}
+          >
+            {creatorName} ({creatorRoleLabel})
+            {(userRole === "creator" || userRole === "host") && (
+              <button onClick={() => handleRemovePlayer(creatorName)}>Remove</button>
+            )}
+          </li>
         )}
-        {creator && (!host || creator !== host) && <li>{creator} (Creator)</li>}
-        {host && creator !== host && <li>{host} (Host)</li>}
+
+        {host && creator !== host && (
+          <li className="creator-host">
+            {host} (Host)
+            {(userRole === "creator" || userRole === "host") && (
+              <button onClick={() => handleRemovePlayer(host)}>Remove</button>
+            )}
+          </li>
+        )}
+
         {players.map((p) => (
           <li key={p}>
             {p}
-            <button onClick={() => handleRemovePlayer(p)}>Remove</button>
+            {(userRole === "creator" || userRole === "host") && (
+              <button onClick={() => handleRemovePlayer(p)}>Remove</button>
+            )}
           </li>
         ))}
       </ul>
 
-      {/* Dice selection */}
+      {/* Dice Selection */}
       <div className="dice-selection">
         <h3>Select Dice</h3>
         <div className="dice-thumbnails">
@@ -141,7 +160,6 @@ export default function LobbySidebar({
               key={die}
               className={selectedDie === die ? "selected-dice" : ""}
               onClick={() => setSelectedDie(die)}
-              style={{ cursor: "pointer", display: "inline-block", margin: "5px" }}
             >
               <Dice type={die} size={40} />
             </div>
@@ -155,15 +173,12 @@ export default function LobbySidebar({
           Roll Dice
         </button>
 
-        {/* Rolling Dice Render with 3D rotation */}
         {rolling && (
           <div
+            className="rolling-dice"
             style={{
-              position: "absolute",
               top: dicePosition.y,
               left: dicePosition.x,
-              zIndex: 1000,
-              pointerEvents: "none",
               transform: `rotateX(${rotation.x}deg) rotateY(${rotation.y}deg)`,
             }}
           >
@@ -171,16 +186,15 @@ export default function LobbySidebar({
           </div>
         )}
 
-        {/* Dice result with safe guard */}
         {diceResult && (
           <p className="dice-result">
             {diceResult.username} rolled {diceResult.value} on{" "}
-            {diceResult.type ? diceResult.type.toUpperCase() : "UNKNOWN"}
+            {diceResult.type.toUpperCase()}
           </p>
         )}
       </div>
 
-      {/* Fullscreen button (optional, can remove) */}
+      {/* Fullscreen toggle */}
       <button className="fullscreen-button" onClick={onToggleFullScreen}>
         {isFullScreen ? "Exit Full-Screen" : "Full-Screen"}
       </button>

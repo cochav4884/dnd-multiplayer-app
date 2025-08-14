@@ -30,6 +30,11 @@ body,
   right: 0;
 }
 
+/* Hide automatically in fullscreen */
+body.fullscreen-mode .background-sidebar {
+  display: none;
+}
+
 /* Toggle button in top-right corner */
 .toggle-button {
   position: fixed;
