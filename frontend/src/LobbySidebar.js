@@ -57,17 +57,13 @@ export default function LobbySidebar({
     if (!selectedDie) return;
     setRolling(true);
     const startTime = Date.now();
-    const duration = 1000; // 1 second
+    const duration = 1000;
 
     const animate = () => {
       const elapsed = Date.now() - startTime;
       const t = Math.min(elapsed / duration, 1);
-
-      // Bounce & random horizontal movement
       const x = Math.random() * 300;
       const y = 100 - Math.sin(t * Math.PI) * 50;
-
-      // Rotation for 3D effect
       const rotX = t * 720;
       const rotY = t * 720;
 
@@ -123,8 +119,11 @@ export default function LobbySidebar({
     <div className={`lobby-sidebar ${isFullScreen ? "hidden" : ""}`}>
       {/* Player list */}
       <ul className="player-list">
-        {creator && <li>{creator} (Creator)</li>}
-        {host && host !== creator && <li>{host} (Host)</li>}
+        {creator && host && creator === host && (
+          <li>{creator} (Creator & Host)</li>
+        )}
+        {creator && (!host || creator !== host) && <li>{creator} (Creator)</li>}
+        {host && creator !== host && <li>{host} (Host)</li>}
         {players.map((p) => (
           <li key={p}>
             {p}
@@ -172,16 +171,16 @@ export default function LobbySidebar({
           </div>
         )}
 
-        {/* Dice result */}
+        {/* Dice result with safe guard */}
         {diceResult && (
           <p className="dice-result">
             {diceResult.username} rolled {diceResult.value} on{" "}
-            {diceResult.type.toUpperCase()}
+            {diceResult.type ? diceResult.type.toUpperCase() : "UNKNOWN"}
           </p>
         )}
       </div>
 
-      {/* Fullscreen button */}
+      {/* Fullscreen button (optional, can remove) */}
       <button className="fullscreen-button" onClick={onToggleFullScreen}>
         {isFullScreen ? "Exit Full-Screen" : "Full-Screen"}
       </button>

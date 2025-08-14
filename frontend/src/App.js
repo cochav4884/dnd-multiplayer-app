@@ -16,9 +16,7 @@ export default function App() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [inBattlefield, setInBattlefield] = useState(false);
 
-  if (!user) {
-    return <Login />;
-  }
+  if (!user) return <Login />;
 
   // Fullscreen toggle
   const toggleFullscreen = () => setIsFullscreen((prev) => !prev);
@@ -56,9 +54,9 @@ export default function App() {
 
       {/* Center: Battlefield */}
       <div className="battlefield-wrapper">
+        {/* Show sidebars for host/creator whenever battlefield is open */}
         {(user.role === "host" || user.role === "creator") &&
           battlefieldOpen &&
-          !gameStarted &&
           !isFullscreen && (
             <>
               <BackgroundSidebar
@@ -70,6 +68,7 @@ export default function App() {
             </>
           )}
 
+        {/* Battlefield canvas */}
         <Battlefield
           userRole={user.role}
           battlefieldOpen={battlefieldOpen}

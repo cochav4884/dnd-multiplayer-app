@@ -1,3 +1,4 @@
+// src/components/Battlefield.js
 import React, { useState, useEffect } from "react";
 import BackgroundSidebar from "./BackgroundSidebar";
 import AssetsSidebar from "./AssetsSidebar";
@@ -19,13 +20,14 @@ export default function Battlefield({
   const [localBackground, setLocalBackground] = useState(selectedBackground);
   const [hideSidebars, setHideSidebars] = useState(false);
 
+  // Initialize default player
   useEffect(() => {
     if (players.length === 0 && gameStarted) {
       setPlayers([{ name: "You", x: 0, y: 0 }]);
     }
   }, [gameStarted, players.length]);
 
-  // Player Movement
+  // Player movement
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (!gameStarted) return;
@@ -51,16 +53,11 @@ export default function Battlefield({
 
           // Check for asset found
           setAssets((prevAssets) =>
-            prevAssets.map((asset) => {
-              if (
-                !asset.found &&
-                asset.x === player.x &&
-                asset.y === player.y
-              ) {
-                return { ...asset, found: true };
-              }
-              return asset;
-            })
+            prevAssets.map((asset) =>
+              !asset.found && asset.x === player.x && asset.y === player.y
+                ? { ...asset, found: true }
+                : asset
+            )
           );
 
           return newPlayers;
@@ -98,6 +95,7 @@ export default function Battlefield({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [gameStarted]);
 
+  // Asset placement
   const handlePlaceAsset = (assetId, x, y) => {
     if (x < 0 || x >= GRID_COLUMNS || y < 0 || y >= GRID_ROWS) return;
     setAssets((prev) =>
@@ -119,16 +117,34 @@ export default function Battlefield({
     handlePlaceAsset(assetId, x, y);
   };
 
+  // Generate grid cells
+  const gridCells = [];
+  for (let y = 0; y < GRID_ROWS; y++) {
+    for (let x = 0; x < GRID_COLUMNS; x++) {
+      gridCells.push(
+        <div
+          key={`${x}-${y}`}
+          className="grid-square"
+          style={{
+            width: GRID_SIZE,
+            height: GRID_SIZE,
+            left: x * GRID_SIZE,
+            top: y * GRID_SIZE,
+          }}
+        />
+      );
+    }
+  }
+
   return (
     <div
       className={`battlefield-wrapper ${isFullScreen ? "fullscreen" : ""} ${
         hideSidebars ? "hide-sidebars" : ""
       }`}
     >
-      {/* Sidebars for host/creator when battlefield is open */}
+      {/* Sidebars for host/creator */}
       {(userRole === "host" || userRole === "creator") &&
         battlefieldOpen &&
-        !gameStarted &&
         !isFullScreen &&
         !hideSidebars && (
           <>
@@ -162,6 +178,7 @@ export default function Battlefield({
         onDragOver={handleDragOver}
         onDrop={handleDrop}
       >
+        {/* Background */}
         {localBackground && (
           <img
             src={localBackground}
@@ -169,6 +186,9 @@ export default function Battlefield({
             className="battlefield-background"
           />
         )}
+
+        {/* Grid overlay */}
+        <div className="grid">{gridCells}</div>
 
         {/* Players */}
         {players.map((player) => (
@@ -179,6 +199,27 @@ export default function Battlefield({
           >
             {player.name[0]}
           </div>
+        ))}
+
+        {/* Players + Flashlight */}
+        {players.map((player) => (
+          <React.Fragment key={player.name}>
+            <div
+              className="player"
+              style={{ left: player.x * GRID_SIZE, top: player.y * GRID_SIZE }}
+            >
+              {player.name[0]}
+            </div>
+            {!["host", "creator"].includes(userRole) && gameStarted && (
+              <div
+                className="flashlight"
+                style={{
+                  left: player.x * GRID_SIZE + GRID_SIZE / 2,
+                  top: player.y * GRID_SIZE + GRID_SIZE / 2,
+                }}
+              />
+            )}
+          </React.Fragment>
         ))}
 
         {/* Assets */}
