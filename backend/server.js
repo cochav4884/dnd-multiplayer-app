@@ -99,10 +99,18 @@ app.post('/logout', (req, res) => {
 // Socket connection
 io.on('connection', (socket) => {
   console.log('A user connected');
+
+  // Send initial lobby state
   socket.emit('lobbyUpdate', {
     creator: creatorLoggedIn ? users.creator.username : null,
     host: hostLoggedIn && !creatorLoggedIn ? users.host.username : null,
     players,
+  });
+
+  // Handle dice roll
+  socket.on('rollDice', ({ username }) => {
+    const diceValue = Math.floor(Math.random() * 6) + 1; // 1-6
+    io.emit('diceRolled', { username, diceValue });
   });
 
   socket.on('disconnect', () => {
