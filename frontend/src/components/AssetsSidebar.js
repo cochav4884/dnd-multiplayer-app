@@ -2,9 +2,8 @@ import React, { useState } from "react";
 import "./AssetsSidebar.css";
 
 export default function AssetsSidebar({ onPlaceAsset, userRole }) {
+  // Hooks must be top-level
   const [isSidebarVisible, setSidebarVisible] = useState(false);
-
-  // Example assets
   const [assets, setAssets] = useState([
     { id: 1, name: "Treasure Chest", x: null, y: null, found: false },
     { id: 2, name: "Magic Sword", x: null, y: null, found: false },
@@ -14,9 +13,11 @@ export default function AssetsSidebar({ onPlaceAsset, userRole }) {
   const toggleSidebar = () => setSidebarVisible((prev) => !prev);
 
   const handlePlaceAsset = (assetId) => {
-    // Random placement (demo); can replace with drag-drop coordinates
-    const x = Math.floor(Math.random() * 40); // GRID_COLUMNS
-    const y = Math.floor(Math.random() * 25); // GRID_ROWS
+    const GRID_COLUMNS = 40;
+    const GRID_ROWS = 25;
+
+    const x = Math.floor(Math.random() * GRID_COLUMNS);
+    const y = Math.floor(Math.random() * GRID_ROWS);
 
     setAssets((prev) =>
       prev.map((a) =>
@@ -27,7 +28,7 @@ export default function AssetsSidebar({ onPlaceAsset, userRole }) {
     if (onPlaceAsset) onPlaceAsset(assetId, x, y);
   };
 
-  // Only show sidebar for host or creator
+  // Only render content for host or creator
   if (userRole !== "host" && userRole !== "creator") return null;
 
   return (

@@ -3,6 +3,8 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const http = require('http');
 const { Server } = require('socket.io');
+const { createCanvas } = require('canvas');
+
 
 const app = express();
 app.use(cors());
@@ -13,19 +15,16 @@ const io = new Server(server, { cors: { origin: "*" } });
 
 const PORT = 5000;
 
-// In-memory store
 let creatorLoggedIn = false;
 let hostLoggedIn = false;
 let players = [];
 const MAX_PLAYERS = 10;
 
-// Hardcoded users
 const users = {
   creator: { username: 'Samuel', password: 'creatorPass' },
   host: { username: 'DM', password: 'hostPass' },
 };
 
-// Emit current lobby to all clients
 const emitLobby = () => {
   io.emit('lobbyUpdate', {
     creator: creatorLoggedIn ? users.creator.username : null,
@@ -34,7 +33,6 @@ const emitLobby = () => {
   });
 };
 
-// Login route
 app.post('/login', (req, res) => {
   const { role, username, password } = req.body;
 
@@ -45,16 +43,6 @@ app.post('/login', (req, res) => {
       return res.json({ success: true, message: 'Creator logged in.' });
     }
     return res.json({ success: false, message: 'Invalid Creator credentials.' });
-  }
-
-  if (role === 'creator & host') {
-    if (username === users.creator.username && password === users.creator.password) {
-      creatorLoggedIn = true;
-      hostLoggedIn = true;
-      emitLobby();
-      return res.json({ success: true, message: 'Creator & Host logged in.' });
-    }
-    return res.json({ success: false, message: 'Invalid credentials for Creator & Host.' });
   }
 
   if (!creatorLoggedIn) return res.json({ success: false, message: 'Lobby closed until Creator logs in.' });
@@ -82,7 +70,6 @@ app.post('/login', (req, res) => {
   return res.json({ success: false, message: 'Invalid role.' });
 });
 
-// Logout route
 app.post('/logout', (req, res) => {
   const { role, username } = req.body;
 
@@ -94,24 +81,29 @@ app.post('/logout', (req, res) => {
   res.json({ success: true, message: `${role} logged out.` });
 });
 
-// Socket connection
+app.post("/clear-lobby", (req, res) => {
+  creatorLoggedIn = false;
+  hostLoggedIn = false;
+  players = [];
+
+  io.emit("lobbyUpdate", { creator: null, host: null, players: [] });
+
+  res.json({ success: true, message: "Lobby cleared." });
+});
+
 io.on('connection', (socket) => {
   console.log('A user connected');
-
-  // Send initial lobby state
   socket.emit('lobbyUpdate', {
     creator: creatorLoggedIn ? users.creator.username : null,
     host: hostLoggedIn && !creatorLoggedIn ? users.host.username : null,
     players,
   });
 
-  // Dice roll handler
   socket.on('rollDice', (data) => {
     const diceValue = Math.floor(Math.random() * 6) + 1;
     io.emit('diceRolled', { username: data.username, diceValue });
   });
 
-  // Handle disconnection
   socket.on('disconnect', () => {
     console.log('A user disconnected');
   });

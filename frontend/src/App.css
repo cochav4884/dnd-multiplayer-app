@@ -15,7 +15,7 @@ html, body, #root, .app-container {
 
 /* Fullscreen mode overrides */
 .fullscreen-mode {
-  display: block;
+  display: block; /* Only show battlefield content */
   width: 100vw;
   height: 100vh;
   overflow: hidden;
@@ -29,19 +29,69 @@ html, body, #root, .app-container {
   justify-content: center;
   align-items: center;
   background-color: #111;
+  overflow: hidden;
 }
 
-/* Fullscreen button */
-.fullscreen-btn {
-  position: fixed;
-  top: 10px;
-  right: 50%;
-  transform: translateX(50%);
-  z-index: 10000;
-  padding: 10px 15px;
-  border-radius: 4px;
-  border: none;
-  cursor: pointer;
-  color: white;
-  background-color: #4caf50;
+/* Optional: ensure Battlefield scales correctly in fullscreen */
+.battlefield-wrapper > * {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
+
+/* Lobby Sidebar adjustments */
+.lobby-sidebar {
+  width: 250px;
+  background-color: #222;
+  color: #fff;
+  padding: 10px;
+  box-sizing: border-box;
+  overflow-y: auto;
+}
+
+.lobby-sidebar.hidden {
+  display: none;
+}
+
+/* Player list */
+.player-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 20px 0;
+}
+
+.player-list li {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 5px;
+}
+
+/* Dice section */
+.dice-selection {
+  margin-bottom: 20px;
+}
+
+.dice-thumbnails div.selected-dice {
+  border: 2px solid #4caf50;
+  box-shadow: 0 0 5px #4caf50;
+}
+
+/* Dice area */
+.dice-area {
+  margin-bottom: 20px;
+}
+
+.dice-result {
+  margin-top: 10px;
+  font-weight: bold;
+}
+
+/* Lobby controls buttons */
+.lobby-controls button {
+  display: block;
+  margin-bottom: 5px;
+  width: 100%;
+  padding: 5px;
+  cursor: pointer;
+}
+

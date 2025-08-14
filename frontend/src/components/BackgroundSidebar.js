@@ -17,16 +17,14 @@ export default function BackgroundSidebar({ selectedBackground, onSelect, userRo
 
   return (
     <>
-      {/* Toggle Button */}
       <button
         className="toggle-button"
         onClick={toggleSidebar}
         aria-label="Toggle Background Sidebar"
       >
-        {isSidebarVisible ? "Close" : "Backgrounds"}
+        {isSidebarVisible ? "Close Backgrounds" : "Backgrounds"}
       </button>
 
-      {/* Sidebar */}
       <div className={`background-sidebar ${isSidebarVisible ? "active" : ""}`}>
         {Object.entries(images).map(([fileName, src], i) => {
           const displayName = fileName
