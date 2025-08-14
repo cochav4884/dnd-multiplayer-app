@@ -1,7 +1,7 @@
 // src/components/LobbySidebar.js
 import React, { useState, useEffect } from "react";
 import { socket } from "./socket";
-import Dice from "./Dice";
+import Dice from "./components/Dice";
 import "./LobbySidebar.css";
 
 export default function LobbySidebar({
