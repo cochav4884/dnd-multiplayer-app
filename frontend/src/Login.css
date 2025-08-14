@@ -1,0 +1,52 @@
+.login-page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  background-image: url('../public/horizonImages/Horizon5.jpg'); /* replace with your background */
+  background-size: cover;
+  color: white;
+}
+
+.login-form {
+  background: rgba(0,0,0,0.6);
+  padding: 20px;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 280px;
+}
+
+.login-form input, .login-form select, .login-form button {
+  padding: 8px;
+  border-radius: 5px;
+  border: none;
+  font-size: 14px;
+}
+
+.login-form button {
+  cursor: pointer;
+  background-color: #4caf50;
+  color: white;
+  font-weight: bold;
+}
+
+.login-form button:hover {
+  background-color: #43a047;
+}
+
+.error {
+  color: red;
+  font-weight: bold;
+  margin-top: 5px;
+}
+
+select {
+  min-height: 2em;
+  padding: 5px;
+}
+option {
+  padding: 5px;
+}

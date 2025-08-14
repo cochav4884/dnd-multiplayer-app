@@ -1,4 +1,4 @@
-/* Ensure full-height layout */
+/* Full-height layout for app */
 html,
 body,
 #root,
@@ -13,15 +13,16 @@ body,
 .background-sidebar {
   position: fixed;
   top: 0;
-  right: -260px;           /* Hide by default */
+  right: -260px; /* Hidden by default */
   width: 250px;
   height: 100%;
-  background-color: #222;
+  background-color: rgba(34, 34, 34, 0.95); /* Slight transparency */
   padding: 1rem;
   overflow-y: auto;
   box-sizing: border-box;
   transition: right 0.3s ease;
-  z-index: 999;            /* Just below toggle button */
+  z-index: 998; /* Just below AssetsSidebar */
+  scroll-behavior: smooth;
 }
 
 /* Slide sidebar into view */
@@ -34,7 +35,7 @@ body,
   position: fixed;
   top: 10px;
   right: 10px;
-  z-index: 1000;           /* Always above sidebar */
+  z-index: 1003; /* Above all sidebars */
   background-color: #4caf50;
   color: white;
   border: none;
@@ -59,9 +60,10 @@ body,
   border: 3px solid transparent;
   border-radius: 6px;
   object-fit: cover;
-  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  object-position: center;
   aspect-ratio: 16 / 9;
   box-sizing: border-box;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 .background-thumb:hover {
@@ -71,4 +73,18 @@ body,
 .background-thumb.selected {
   border-color: #4caf50;
   box-shadow: 0 0 8px #4caf50;
+}
+
+/* Smooth scrollbar */
+.background-sidebar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.background-sidebar::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+}
+
+.background-sidebar::-webkit-scrollbar-track {
+  background-color: transparent;
 }

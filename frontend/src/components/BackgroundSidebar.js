@@ -1,24 +1,28 @@
-// src/components/BackgroundSidebar.jsx
 import React, { useState } from "react";
 import { importAllImages } from "../utils/importAllImages";
 import "./BackgroundSidebar.css";
 
-// Import all image files from the /images folder
+// Import all images from /images folder
 const images = importAllImages(
   require.context("../images", false, /\.(png|jpe?g|svg)$/)
 );
 
-export default function BackgroundSidebar({ selectedBackground, onSelect }) {
+export default function BackgroundSidebar({ selectedBackground, onSelect, userRole }) {
   const [isSidebarVisible, setSidebarVisible] = useState(false);
 
-  const toggleSidebar = () => {
-    setSidebarVisible((prev) => !prev);
-  };
+  // Only host or creator can see the sidebar
+  if (userRole !== "host" && userRole !== "creator") return null;
+
+  const toggleSidebar = () => setSidebarVisible((prev) => !prev);
 
   return (
     <>
       {/* Toggle Button */}
-      <button className="toggle-button" onClick={toggleSidebar}>
+      <button
+        className="toggle-button"
+        onClick={toggleSidebar}
+        aria-label="Toggle Background Sidebar"
+      >
         {isSidebarVisible ? "Close" : "Backgrounds"}
       </button>
 
@@ -26,8 +30,8 @@ export default function BackgroundSidebar({ selectedBackground, onSelect }) {
       <div className={`background-sidebar ${isSidebarVisible ? "active" : ""}`}>
         {Object.entries(images).map(([fileName, src], i) => {
           const displayName = fileName
-            .replace(/\.[^/.]+$/, "")     // Remove extension
-            .replace(/[-_]/g, " ")        // Replace dashes/underscores with spaces
+            .replace(/\.[^/.]+$/, "")
+            .replace(/[-_]/g, " ")
             .trim();
 
           return (
@@ -35,11 +39,15 @@ export default function BackgroundSidebar({ selectedBackground, onSelect }) {
               key={i}
               src={src}
               alt={displayName}
-              title={displayName}          // Tooltip on hover
+              title={displayName}
+              loading="lazy"
               className={`background-thumb ${
                 selectedBackground === src ? "selected" : ""
               }`}
-              onClick={() => onSelect(src)}
+              onClick={() => {
+                onSelect(src);
+                setSidebarVisible(false); // auto-close after selection
+              }}
             />
           );
         })}

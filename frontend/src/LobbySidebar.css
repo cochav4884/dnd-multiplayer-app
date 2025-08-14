@@ -1,0 +1,74 @@
+.lobby-sidebar {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 250px;
+  height: 100%;
+  background-color: #222;
+  color: white;
+  padding: 1rem;
+  box-sizing: border-box;
+  overflow-y: auto;
+  z-index: 100;
+}
+
+.lobby-sidebar.hidden {
+  display: none;
+}
+
+.lobby-sidebar h2 {
+  margin-top: 0;
+}
+
+/* Player List */
+.player-list {
+  list-style: none;
+  padding: 0;
+  margin-bottom: 1rem;
+}
+
+.player-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 5px;
+}
+
+.player-list li button {
+  padding: 3px 6px;
+  background-color: #f44336;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  color: white;
+}
+
+.player-list li button:hover {
+  background-color: #d32f2f;
+}
+
+/* Buttons */
+.lobby-sidebar button {
+  display: block;
+  width: 100%;
+  margin-bottom: 0.5rem;
+  padding: 8px 12px;
+  background-color: #4caf50;
+  border: none;
+  border-radius: 4px;
+  color: white;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.2s ease;
+}
+
+.lobby-sidebar button:hover {
+  background-color: #43a047;
+}
+
+/* Fullscreen button */
+.fullscreen-button {
+  position: absolute;
+  bottom: 20px;
+  width: 90%;
+}
