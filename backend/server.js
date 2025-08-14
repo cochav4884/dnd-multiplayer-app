@@ -25,7 +25,7 @@ const users = {
   host: { username: 'DM', password: 'hostPass' },
 };
 
-// Function to emit current lobby to all clients
+// Emit current lobby to all clients
 const emitLobby = () => {
   io.emit('lobbyUpdate', {
     creator: creatorLoggedIn ? users.creator.username : null,
@@ -57,9 +57,7 @@ app.post('/login', (req, res) => {
     return res.json({ success: false, message: 'Invalid credentials for Creator & Host.' });
   }
 
-  if (!creatorLoggedIn) {
-    return res.json({ success: false, message: 'Lobby closed until Creator logs in.' });
-  }
+  if (!creatorLoggedIn) return res.json({ success: false, message: 'Lobby closed until Creator logs in.' });
 
   if (role === 'host') {
     if (hostLoggedIn) return res.json({ success: false, message: 'Lobby full for hosts.' });
@@ -107,12 +105,13 @@ io.on('connection', (socket) => {
     players,
   });
 
-  // Handle dice roll
-  socket.on('rollDice', ({ username }) => {
-    const diceValue = Math.floor(Math.random() * 6) + 1; // 1-6
-    io.emit('diceRolled', { username, diceValue });
+  // Dice roll handler
+  socket.on('rollDice', (data) => {
+    const diceValue = Math.floor(Math.random() * 6) + 1;
+    io.emit('diceRolled', { username: data.username, diceValue });
   });
 
+  // Handle disconnection
   socket.on('disconnect', () => {
     console.log('A user disconnected');
   });

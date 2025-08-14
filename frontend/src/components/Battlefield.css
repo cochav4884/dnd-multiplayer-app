@@ -115,7 +115,7 @@ body,
   top: 10px;
   left: 50%;
   transform: translateX(-50%);
-  z-index: 1004; /* Above all sidebars and battlefield */
+  z-index: 1004;
   padding: 10px 20px;
   background-color: #4caf50;
   color: white;
@@ -134,7 +134,7 @@ body,
 /* Toggle Hide/Show Sidebars button */
 .toggle-sidebars-btn {
   position: fixed;
-  top: 50px; /* below fullscreen button */
+  top: 50px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 1000;
@@ -152,6 +152,55 @@ body,
   background-color: #fb8c00;
 }
 
+/* Battlefield controls (host/player buttons) */
+.battlefield-controls {
+  position: fixed;
+  top: 100px; /* below fullscreen & toggle buttons */
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1005;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 250px;
+}
+
+.battlefield-controls button {
+  padding: 8px 12px;
+  background-color: #2196f3;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.2s ease;
+}
+
+.battlefield-controls button:hover {
+  background-color: #1976d2;
+}
+
+/* Rules overlay */
+.battlefield-rules {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 100;
+  background-color: rgba(0,0,0,0.85);
+  color: white;
+  padding: 20px 30px;
+  border-radius: 8px;
+  text-align: left;
+  max-width: 400px;
+}
+
+.battlefield-rules h2 {
+  margin-top: 0;
+  margin-bottom: 10px;
+  text-align: center;
+}
+
 /* Hide sidebars when .hide-sidebars is applied */
 .hide-sidebars .background-sidebar,
 .hide-sidebars .assets-sidebar {
@@ -161,7 +210,7 @@ body,
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .toggle-sidebars-btn {
-    top: 80px; /* move lower on smaller screens to avoid overlap */
+    top: 80px;
     font-size: 12px;
     padding: 6px 10px;
   }
@@ -170,5 +219,10 @@ body,
   .exit-fullscreen-btn {
     font-size: 12px;
     padding: 6px 12px;
+  }
+
+  .battlefield-controls {
+    top: 120px;
+    max-width: 200px;
   }
 }

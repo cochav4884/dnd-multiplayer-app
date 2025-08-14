@@ -25,7 +25,6 @@ export default function Battlefield({ userRole, gameStarted, selectedBackground 
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (!gameStarted) return;
-
       const movePlayer = (playerIndex, dx, dy) => {
         setPlayers((prev) => {
           const newPlayers = [...prev];
@@ -94,7 +93,6 @@ export default function Battlefield({ userRole, gameStarted, selectedBackground 
     );
   };
 
-  // Drag-and-drop handlers
   const handleDragOver = (e) => e.preventDefault();
   const handleDrop = (e) => {
     e.preventDefault();
@@ -115,48 +113,50 @@ export default function Battlefield({ userRole, gameStarted, selectedBackground 
         </>
       )}
 
-      {/* Full-Screen Toggle */}
-      {!isFullScreen && (
-        <button
-          className="fullscreen-btn"
-          style={{ top: "10px", left: hideSidebars ? "10px" : "50%" }}
-          onClick={() => setFullScreen(true)}
-        >
-          Full Screen
+      {/* Host/Player Buttons & Fullscreen Toggle */}
+      <div className="battlefield-controls">
+        {(userRole === "host" || userRole === "creator") && (
+          <>
+            <button onClick={() => setHideSidebars(prev => !prev)}>
+              {hideSidebars ? "Show Sidebars" : "Hide Sidebars"}
+            </button>
+            {!gameStarted && <button onClick={() => alert("Open Battlefield clicked")}>Open Battlefield</button>}
+            {!gameStarted && <button onClick={() => alert("Start Game clicked")}>Start Game</button>}
+            {gameStarted && <button onClick={() => alert("End Game clicked")}>End Game</button>}
+          </>
+        )}
+        {userRole === "player" && (
+          <>
+            {!gameStarted && <button disabled>Wait for host...</button>}
+            {gameStarted && !players.some(p => p.name === "You") && <button onClick={() => setPlayers([...players, { name: "You", x:0, y:0 }])}>Join Battlefield</button>}
+            {gameStarted && players.some(p => p.name === "You") && <button onClick={() => setPlayers(players.filter(p => p.name !== "You"))}>Leave Battlefield</button>}
+          </>
+        )}
+        <button onClick={() => setFullScreen(prev => !prev)}>
+          {isFullScreen ? "Exit Full Screen" : "Full Screen"}
         </button>
-      )}
-      {isFullScreen && (
-        <button
-          className="exit-fullscreen-btn"
-          onClick={() => setFullScreen(false)}
-        >
-          Exit Full Screen
-        </button>
-      )}
+      </div>
 
-      {/* Hide/Show Sidebars Button */}
-      {!isFullScreen && (userRole === "host" || userRole === "creator") && (
-        <button
-          className="toggle-sidebars-btn"
-          style={{ top: "50px", left: "10px" }}
-          onClick={() => setHideSidebars((prev) => !prev)}
-        >
-          {hideSidebars ? "Show Sidebars" : "Hide Sidebars"}
-        </button>
-      )}
-
-      {/* Battlefield Container */}
+      {/* Battlefield container */}
       <div
-        className={`battlefield-container ${gameStarted ? "darkened" : ""}`}
+        className={`battlefield-container ${gameStarted ? "" : "show-rules"}`}
         onDragOver={handleDragOver}
         onDrop={handleDrop}
       >
-        {localBackground && (
-          <img
-            src={localBackground}
-            alt="Battlefield Background"
-            className="battlefield-background"
-          />
+        {localBackground && <img src={localBackground} alt="Background" className="battlefield-background" />}
+
+        {/* Rules displayed when game has not started */}
+        {!gameStarted && (
+          <div className="battlefield-rules">
+            <h2>Lobby Rules & Conduct</h2>
+            <ul>
+              <li>Respect all players and hosts.</li>
+              <li>No cheating or exploiting game mechanics.</li>
+              <li>Communicate politely and clearly.</li>
+              <li>Follow instructions from host/creator.</li>
+              <li>Have fun!</li>
+            </ul>
+          </div>
         )}
 
         {/* Grid */}
@@ -173,46 +173,19 @@ export default function Battlefield({ userRole, gameStarted, selectedBackground 
         </div>
 
         {/* Players */}
-        {players.map((player) => (
-          <div
-            key={player.name}
-            className="player"
-            style={{ left: player.x * GRID_SIZE, top: player.y * GRID_SIZE }}
-          >
+        {players.map(player => (
+          <div key={player.name} className="player" style={{ left: player.x * GRID_SIZE, top: player.y * GRID_SIZE }}>
             {player.name[0]}
           </div>
         ))}
 
-        {/* Flashlights */}
-        {gameStarted &&
-          players.map((player) => (
-            <div
-              key={player.name + "-light"}
-              className="flashlight"
-              style={{
-                left: player.x * GRID_SIZE - GRID_SIZE,
-                top: player.y * GRID_SIZE - GRID_SIZE,
-              }}
-            />
-          ))}
-
         {/* Assets */}
-        {assets.map((asset) => {
+        {assets.map(asset => {
           if (asset.found) return null;
-          const visible =
-            userRole === "host" ||
-            userRole === "creator" ||
-            players.some(p => Math.abs(p.x - asset.x) <= 1 && Math.abs(p.y - asset.y) <= 1);
+          const visible = userRole === "host" || userRole === "creator" ||
+                          players.some(p => Math.abs(p.x - asset.x) <= 1 && Math.abs(p.y - asset.y) <= 1);
           return (
-            <div
-              key={asset.id}
-              className="asset"
-              style={{
-                left: asset.x * GRID_SIZE,
-                top: asset.y * GRID_SIZE,
-                display: visible ? "flex" : "none",
-              }}
-            >
+            <div key={asset.id} className="asset" style={{ left: asset.x * GRID_SIZE, top: asset.y * GRID_SIZE, display: visible ? "flex" : "none" }}>
               {asset.name[0]}
             </div>
           );
