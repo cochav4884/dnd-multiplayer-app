@@ -4,13 +4,34 @@
   align-items: center;
   justify-content: center;
   height: 100vh;
-  background-image: url('../public/horizonImages/Horizon5.jpg'); /* replace with your background */
-  background-size: cover;
+  background-image: url("../public/horizonImages/Horizon11.jpg");
+  background-size: contain;       /* default: show whole image */
+  background-repeat: no-repeat;   /* prevent tiling */
+  background-position: center;    /* center image */
+  background-color: #000;         /* fill empty space */
   color: white;
+  transition: background-size 0.3s ease; /* smooth switch */
 }
 
+/* On narrower screens, fill the background */
+@media (max-width: 900px) {
+  .login-page {
+    background-size: cover;        /* fill container */
+    background-position: center;   /* center crop */
+  }
+}
+
+/* Optional: for very tall screens (portrait tablets / phones) */
+@media (max-height: 700px) {
+  .login-page {
+    background-size: cover;        /* fill container vertically */
+    background-position: center;
+  }
+}
+
+/* Login form styling remains the same */
 .login-form {
-  background: rgba(0,0,0,0.6);
+  background: rgba(0, 0, 0, 0.6);
   padding: 20px;
   border-radius: 10px;
   display: flex;
@@ -19,7 +40,9 @@
   min-width: 280px;
 }
 
-.login-form input, .login-form select, .login-form button {
+.login-form input,
+.login-form select,
+.login-form button {
   padding: 8px;
   border-radius: 5px;
   border: none;
