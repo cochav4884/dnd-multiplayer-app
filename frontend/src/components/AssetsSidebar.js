@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import "./AssetsSidebar.css";
 
 export default function AssetsSidebar({ onPlaceAsset, userRole }) {
-  // Hooks must be top-level
   const [isSidebarVisible, setSidebarVisible] = useState(false);
   const [assets, setAssets] = useState([
     { id: 1, name: "Treasure Chest", x: null, y: null, found: false },
@@ -21,11 +20,29 @@ export default function AssetsSidebar({ onPlaceAsset, userRole }) {
 
     setAssets((prev) =>
       prev.map((a) =>
-        a.id === assetId ? { ...a, x, y, found: false } : a
+        a.id === assetId ? { ...a, x, y, found: false, flying: false } : a
       )
     );
 
     if (onPlaceAsset) onPlaceAsset(assetId, x, y);
+  };
+
+  // Animate asset flying back to sidebar
+  const handleCollectAsset = (assetId) => {
+    setAssets((prev) =>
+      prev.map((a) =>
+        a.id === assetId ? { ...a, flying: true } : a
+      )
+    );
+
+    // Wait for animation to finish before resetting
+    setTimeout(() => {
+      setAssets((prev) =>
+        prev.map((a) =>
+          a.id === assetId ? { ...a, x: null, y: null, found: false, flying: false } : a
+        )
+      );
+    }, 500); // match animation duration
   };
 
   // Only render content for host or creator
@@ -46,8 +63,8 @@ export default function AssetsSidebar({ onPlaceAsset, userRole }) {
         {assets.map((asset) => (
           <div
             key={asset.id}
-            className="asset-item"
-            draggable
+            className={`asset-item ${asset.flying ? "flying" : ""}`}
+            draggable={!asset.flying}
             onDragStart={(e) => e.dataTransfer.setData("assetId", asset.id)}
           >
             <span>{asset.name}</span>

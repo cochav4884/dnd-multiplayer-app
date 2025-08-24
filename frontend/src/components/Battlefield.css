@@ -35,6 +35,12 @@ body,
   transition: filter 1s ease;
 }
 
+/* Battle over: fully lit */
+.battlefield-container.battle-over .battlefield-background {
+  filter: brightness(100%);
+  transition: filter 1s ease;
+}
+
 /* Background image */
 .battlefield-background {
   position: absolute;
@@ -44,6 +50,7 @@ body,
   height: 100%;
   object-fit: cover;
   z-index: 0;
+  transition: filter 1s ease;
 }
 
 /* Grid overlay */
@@ -93,6 +100,12 @@ body,
     rgba(0, 0, 0, 1) 100%
   );
   transform: translate(-50%, -50%);
+  transition: opacity 0.5s ease;
+}
+
+/* Hide flashlights when battle is over */
+.battlefield-container.battle-over .flashlight {
+  opacity: 0;
 }
 
 /* Asset markers */
@@ -109,6 +122,7 @@ body,
   border-radius: 3px;
   z-index: 4;
   pointer-events: none;
+  transition: opacity 0.3s ease, transform 0.3s ease;
 }
 
 /* Full-screen buttons */
@@ -194,14 +208,10 @@ body,
   color: white;
   padding: 20px 30px;
   border-radius: 8px;
-  text-align: left;
-  max-width: 400px;
-}
-
-.battlefield-rules h2 {
-  margin-top: 0;
-  margin-bottom: 10px;
   text-align: center;
+  max-width: 400px;
+  opacity: 1;
+  transition: opacity 0.5s ease;
 }
 
 /* Hide sidebars when .hide-sidebars is applied */

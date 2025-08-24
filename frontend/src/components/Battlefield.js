@@ -13,7 +13,6 @@ export default function Battlefield({
   battlefieldOpen,
   gameStarted,
   selectedBackground,
-  hideSidebars,
   inBattlefield,
   onJoinBattlefield,
   onLeaveBattlefield,
@@ -21,21 +20,14 @@ export default function Battlefield({
   assetsFromServer = [],
   onPlaceAsset,
 }) {
-  const [players, setPlayers] = useState([]);
+  const [players, setPlayers] = useState(playersFromLobby || []);
   const [assets, setAssets] = useState(assetsFromServer || []);
-  const [isFullScreen, setFullScreen] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const [localBackground, setLocalBackground] = useState(selectedBackground);
-  const [localHideSidebars, setLocalHideSidebars] = useState(hideSidebars);
+  const [battleOver, setBattleOver] = useState(false);
 
-  // Sync assets from server
-  useEffect(() => {
-    setAssets(assetsFromServer || []);
-  }, [assetsFromServer]);
-
-  // Sync players in battlefield
-  useEffect(() => {
-    setPlayers(playersFromLobby || []);
-  }, [playersFromLobby]);
+  useEffect(() => setAssets(assetsFromServer || []), [assetsFromServer]);
+  useEffect(() => setPlayers(playersFromLobby || []), [playersFromLobby]);
 
   // Player movement
   useEffect(() => {
@@ -57,20 +49,26 @@ export default function Battlefield({
           player.x = newX;
           player.y = newY;
 
-          // Check for asset found
+          // Check flashlight overlap with assets
           setAssets((prevAssets) =>
-            prevAssets.map((asset) =>
-              !asset.found && asset.x === newX && asset.y === newY
-                ? { ...asset, found: true }
-                : asset
-            )
+            prevAssets.map((asset) => {
+              if (!asset.found) {
+                const dx = Math.abs(asset.x - newX);
+                const dy = Math.abs(asset.y - newY);
+                if (dx <= 1 && dy <= 1) {
+                  // Asset found by player
+                  return { ...asset, found: true };
+                }
+              }
+              return asset;
+            })
           );
 
           return newPlayers;
         });
       };
 
-      const playerIndex = 0;
+      const playerIndex = 0; // local player
       switch (e.key) {
         case "ArrowUp":
         case "w":
@@ -101,7 +99,13 @@ export default function Battlefield({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [gameStarted, inBattlefield]);
 
-  // Asset placement
+  // Monitor if all assets are found
+  useEffect(() => {
+    if (assets.length > 0 && assets.every((asset) => asset.found)) {
+      setBattleOver(true);
+    }
+  }, [assets]);
+
   const handleDrop = (e) => {
     e.preventDefault();
     const assetId = parseInt(e.dataTransfer.getData("assetId"));
@@ -110,10 +114,8 @@ export default function Battlefield({
     const y = Math.floor((e.clientY - rect.top) / GRID_SIZE);
     onPlaceAsset(assetId, x, y);
   };
-
   const handleDragOver = (e) => e.preventDefault();
 
-  // Generate grid cells
   const gridCells = [];
   for (let y = 0; y < GRID_ROWS; y++) {
     for (let x = 0; x < GRID_COLUMNS; x++) {
@@ -132,70 +134,50 @@ export default function Battlefield({
     }
   }
 
+  const isHostOrCreator = userRole === "host" || userRole === "creator";
+
   return (
-    <div
-      className={`battlefield-wrapper ${isFullScreen ? "fullscreen" : ""} ${
-        localHideSidebars ? "hide-sidebars" : ""
-      }`}
-    >
-      {/* Right sidebars for host/creator */}
-      {(userRole === "host" || userRole === "creator") && battlefieldOpen && !localFullScreen && !localHideSidebars && (
+    <div className={`battlefield-wrapper ${isFullscreen ? "fullscreen" : ""}`}>
+      {/* Sidebars only visible to host/creator and not fullscreen */}
+      {isHostOrCreator && battlefieldOpen && !isFullscreen && (
         <>
           <BackgroundSidebar
             selectedBackground={localBackground}
             onSelect={setLocalBackground}
             userRole={userRole}
           />
-          <AssetsSidebar
-            userRole={userRole}
-            onPlaceAsset={onPlaceAsset}
-          />
+          <AssetsSidebar userRole={userRole} onPlaceAsset={onPlaceAsset} />
         </>
       )}
 
-      {/* Fullscreen & toggle buttons */}
+      {/* Fullscreen toggle */}
       <div className="battlefield-controls">
-        <button
-          className="fullscreen-btn"
-          onClick={() => setFullScreen((prev) => !prev)}
-        >
-          {isFullScreen ? "Exit Full Screen" : "Full Screen"}
-        </button>
-        {battlefieldOpen && !gameStarted && (
+        {battlefieldOpen && (
           <button
-            className="toggle-sidebars-btn"
-            onClick={() => setLocalHideSidebars((prev) => !prev)}
+            className="fullscreen-btn"
+            onClick={() => setIsFullscreen((prev) => !prev)}
           >
-            {localHideSidebars ? "Show Sidebars" : "Hide Sidebars"}
+            {isFullscreen ? "Exit Full Screen" : "Full Screen"}
           </button>
-        )}
-        {!["host", "creator"].includes(userRole) && battlefieldOpen && (
-          <>
-            {!inBattlefield && (
-              <button onClick={onJoinBattlefield}>Join Battlefield</button>
-            )}
-            {inBattlefield && (
-              <button onClick={onLeaveBattlefield}>Leave Battlefield</button>
-            )}
-          </>
         )}
       </div>
 
-      {/* Battlefield grid */}
+      {/* Battlefield container */}
       <div
-        className={`battlefield-container ${gameStarted ? "game-started" : ""}`}
+        className={`battlefield-container ${gameStarted ? "game-started" : ""} ${
+          battleOver ? "battle-over" : ""
+        }`}
         onDragOver={handleDragOver}
         onDrop={handleDrop}
       >
-        {/* Background */}
         {localBackground && (
           <img
             src={localBackground}
             alt="Background"
             className="battlefield-background"
+            style={{ filter: battleOver ? "brightness(100%)" : "brightness(20%)" }}
           />
         )}
-
         <div className="grid">{gridCells}</div>
 
         {/* Players */}
@@ -211,8 +193,7 @@ export default function Battlefield({
               {player.name[0]}
             </div>
 
-            {/* Flashlight for non-host/creator */}
-            {!["host", "creator"].includes(userRole) && gameStarted && (
+            {!isHostOrCreator && gameStarted && !battleOver && (
               <div
                 className="flashlight"
                 style={{
@@ -226,13 +207,15 @@ export default function Battlefield({
 
         {/* Assets */}
         {assets.map((asset) => {
+          // Do not show assets if found (they return to sidebar)
           if (asset.found) return null;
+
           const visible =
-            userRole === "host" ||
-            userRole === "creator" ||
+            isHostOrCreator ||
             players.some(
               (p) => Math.abs(p.x - asset.x) <= 1 && Math.abs(p.y - asset.y) <= 1
             );
+
           return (
             <div
               key={asset.id}
@@ -248,6 +231,14 @@ export default function Battlefield({
           );
         })}
       </div>
+
+      {/* Battle round over overlay */}
+      {battleOver && (
+        <div className="battlefield-rules">
+          <h2>Battle Round Over!</h2>
+          <p>All assets have been found. The battlefield is fully lit.</p>
+        </div>
+      )}
     </div>
   );
 }

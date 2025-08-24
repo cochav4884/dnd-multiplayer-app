@@ -163,17 +163,20 @@ io.on("connection", (socket) => {
 
   // Leave lobby via socket
   socket.on("leaveLobby", (id) => {
-    if (creator && creator.id === id) {
-      creator = null;
-      if (host && host.id === id) host = null; // remove host if same
-    } else if (host && host.id === id) {
-      host = null;
-    } else {
-      players = players.filter((p) => p.id !== id);
-      battlefieldPlayers = battlefieldPlayers.filter((pid) => pid !== id);
-    }
-    emitLobby();
-  });
+  console.log(`User ${id} left the lobby`);
+
+  if (creator && creator.id === id) {
+    creator = null;
+    if (host && host.id === id) host = null;
+  } else if (host && host.id === id) {
+    host = null;
+  } else {
+    players = players.filter((p) => p.id !== id);
+    battlefieldPlayers = battlefieldPlayers.filter((pid) => pid !== id);
+  }
+
+  emitLobby(); // rebroadcast to everyone
+});
 
   socket.on("disconnect", () => console.log("A user disconnected"));
 });

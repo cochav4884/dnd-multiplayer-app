@@ -1,3 +1,4 @@
+// src/App.js
 import React, { useContext, useState } from "react";
 import { UserContext } from "./UserContext";
 import Login from "./Login";
@@ -6,14 +7,17 @@ import BackgroundSidebar from "./components/BackgroundSidebar";
 import AssetsSidebar from "./components/AssetsSidebar";
 import Battlefield from "./components/Battlefield";
 import "./App.css";
+import { useNavigate } from "react-router-dom";
 
 export default function App() {
-  const { user } = useContext(UserContext);
+  const { user, setUser } = useContext(UserContext);
   const [selectedBackground, setSelectedBackground] = useState(null);
   const [gameStarted, setGameStarted] = useState(false);
   const [battlefieldOpen, setBattlefieldOpen] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [inBattlefield, setInBattlefield] = useState(false);
+
+  const navigate = useNavigate();
 
   if (!user) return <Login />;
 
@@ -32,11 +36,22 @@ export default function App() {
   const handleJoinBattlefield = () => setInBattlefield(true);
   const handleLeaveBattlefield = () => setInBattlefield(false);
 
+  // Leave Lobby → logout & navigate to login
+  const handleNavigateToLogin = () => {
+    setUser(null); // clear user
+    navigate("/login"); // redirect to login route
+  };
+
+  const isHostOrCreator = user.role === "host" || user.role === "creator";
+
   return (
     <div className={`app-container ${isFullscreen ? "fullscreen-mode" : ""}`}>
       {/* Left Sidebar: LobbySidebar */}
-      {!isFullscreen && (
+      {(!isFullscreen || isHostOrCreator) && (
         <LobbySidebar
+          currentUser={user}
+          setCurrentUser={setUser}
+          navigateToLogin={handleNavigateToLogin}
           userRole={user.role}
           gameStarted={gameStarted}
           battlefieldOpen={battlefieldOpen}
@@ -53,19 +68,17 @@ export default function App() {
 
       {/* Center: Battlefield */}
       <div className="battlefield-wrapper">
-        {/* Host/creator sidebars on battlefield (only when not fullscreen) */}
-        {!isFullscreen &&
-          (user.role === "host" || user.role === "creator") &&
-          battlefieldOpen && (
-            <div className="host-sidebars">
-              <BackgroundSidebar
-                userRole={user.role}
-                selectedBackground={selectedBackground}
-                onSelect={setSelectedBackground}
-              />
-              <AssetsSidebar userRole={user.role} />
-            </div>
-          )}
+        {/* Host/creator sidebars always visible on battlefield */}
+        {isHostOrCreator && battlefieldOpen && (
+          <div className="host-sidebars">
+            <BackgroundSidebar
+              userRole={user.role}
+              selectedBackground={selectedBackground}
+              onSelect={setSelectedBackground}
+            />
+            <AssetsSidebar userRole={user.role} />
+          </div>
+        )}
 
         {/* Battlefield canvas */}
         <Battlefield
@@ -73,6 +86,9 @@ export default function App() {
           battlefieldOpen={battlefieldOpen}
           gameStarted={gameStarted}
           selectedBackground={selectedBackground}
+          inBattlefield={inBattlefield}
+          onJoinBattlefield={handleJoinBattlefield}
+          onLeaveBattlefield={handleLeaveBattlefield}
         />
       </div>
     </div>
