@@ -19,20 +19,29 @@ export default function Battlefield({
   playersFromLobby = [],
   assetsFromServer = [],
   onPlaceAsset,
-  onCollectAsset, // New prop for triggering animation
 }) {
   const [players, setPlayers] = useState(playersFromLobby || []);
   const [assets, setAssets] = useState(assetsFromServer || []);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [localBackground, setLocalBackground] = useState(selectedBackground);
+  const [roundOver, setRoundOver] = useState(false);
 
   useEffect(() => setAssets(assetsFromServer || []), [assetsFromServer]);
   useEffect(() => setPlayers(playersFromLobby || []), [playersFromLobby]);
 
+  // Check if all assets are found
+  useEffect(() => {
+    if (assets.length > 0 && assets.every((asset) => asset.found)) {
+      setRoundOver(true);
+    } else {
+      setRoundOver(false);
+    }
+  }, [assets]);
+
   // Player movement
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (!gameStarted || !inBattlefield) return;
+      if (!gameStarted || !inBattlefield || roundOver) return;
 
       const movePlayer = (playerIndex, dx, dy) => {
         setPlayers((prev) => {
@@ -49,16 +58,12 @@ export default function Battlefield({
           player.x = newX;
           player.y = newY;
 
-          // Check if player found any assets
           setAssets((prevAssets) =>
-            prevAssets.map((asset) => {
-              if (!asset.found && asset.x === newX && asset.y === newY) {
-                // Trigger collection animation
-                if (onCollectAsset) onCollectAsset(asset.id);
-                return { ...asset, found: true }; // mark as found for this player
-              }
-              return asset;
-            })
+            prevAssets.map((asset) =>
+              !asset.found && asset.x === newX && asset.y === newY
+                ? { ...asset, found: true }
+                : asset
+            )
           );
 
           return newPlayers;
@@ -94,7 +99,7 @@ export default function Battlefield({
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [gameStarted, inBattlefield, onCollectAsset]);
+  }, [gameStarted, inBattlefield, roundOver]);
 
   const handleDrop = (e) => {
     e.preventDefault();
@@ -140,13 +145,23 @@ export default function Battlefield({
         </>
       )}
 
-      {/* Fullscreen toggle button */}
+      {/* Battlefield controls for players */}
       <div className="battlefield-controls">
-        {battlefieldOpen && (
-          <button
-            className="fullscreen-btn"
-            onClick={() => setIsFullscreen((prev) => !prev)}
-          >
+        {/* Non-host players see Join/Leave Battlefield buttons */}
+        {battlefieldOpen && !isHostOrCreator && (
+          <>
+            {!inBattlefield && (
+              <button onClick={onJoinBattlefield}>Join Battlefield</button>
+            )}
+            {inBattlefield && (
+              <button onClick={onLeaveBattlefield}>Leave Battlefield</button>
+            )}
+          </>
+        )}
+
+        {/* Full Screen toggle visible to any player inside Battlefield */}
+        {inBattlefield && (
+          <button onClick={() => setIsFullscreen((prev) => !prev)}>
             {isFullscreen ? "Exit Full Screen" : "Full Screen"}
           </button>
         )}
@@ -154,7 +169,7 @@ export default function Battlefield({
 
       {/* Battlefield grid */}
       <div
-        className={`battlefield-container ${gameStarted ? "game-started" : ""}`}
+        className={`battlefield-container ${gameStarted ? "game-started" : ""} ${roundOver ? "round-over" : ""}`}
         onDragOver={handleDragOver}
         onDrop={handleDrop}
       >
@@ -180,7 +195,8 @@ export default function Battlefield({
               {player.name[0]}
             </div>
 
-            {!isHostOrCreator && gameStarted && (
+            {/* Flashlight disappears when round is over */}
+            {!isHostOrCreator && gameStarted && !roundOver && (
               <div
                 className="flashlight"
                 style={{
@@ -194,7 +210,7 @@ export default function Battlefield({
 
         {/* Assets */}
         {assets.map((asset) => {
-          if (asset.found) return null; // hide found assets on grid
+          if (asset.found) return null;
           const visible =
             isHostOrCreator ||
             players.some(
@@ -214,6 +230,13 @@ export default function Battlefield({
             </div>
           );
         })}
+
+        {/* Round over overlay */}
+        {roundOver && (
+          <div className="round-over-overlay">
+            <h2>Battle Round Over!</h2>
+          </div>
+        )}
       </div>
     </div>
   );

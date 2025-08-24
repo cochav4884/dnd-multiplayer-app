@@ -35,12 +35,6 @@ body,
   transition: filter 1s ease;
 }
 
-/* Battle over: fully lit */
-.battlefield-container.battle-over .battlefield-background {
-  filter: brightness(100%);
-  transition: filter 1s ease;
-}
-
 /* Background image */
 .battlefield-background {
   position: absolute;
@@ -50,7 +44,6 @@ body,
   height: 100%;
   object-fit: cover;
   z-index: 0;
-  transition: filter 1s ease;
 }
 
 /* Grid overlay */
@@ -100,12 +93,12 @@ body,
     rgba(0, 0, 0, 1) 100%
   );
   transform: translate(-50%, -50%);
-  transition: opacity 0.5s ease;
+  opacity: 0;
+  transition: opacity 0.3s ease, transform 0.2s ease;
 }
 
-/* Hide flashlights when battle is over */
-.battlefield-container.battle-over .flashlight {
-  opacity: 0;
+.flashlight.visible {
+  opacity: 1;
 }
 
 /* Asset markers */
@@ -122,7 +115,6 @@ body,
   border-radius: 3px;
   z-index: 4;
   pointer-events: none;
-  transition: opacity 0.3s ease, transform 0.3s ease;
 }
 
 /* Full-screen buttons */
@@ -178,18 +170,19 @@ body,
   z-index: 1005;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px; /* spacing between buttons */
   max-width: 250px;
+  width: auto;
 }
 
 .battlefield-controls button {
-  padding: 8px 12px;
-  background-color: #2196f3;
-  color: white;
+  padding: 10px 14px;
+  font-size: 14px;
   border: none;
   border-radius: 4px;
+  background-color: #2196f3;
+  color: white;
   cursor: pointer;
-  font-size: 14px;
   transition: background-color 0.2s ease;
 }
 
@@ -208,10 +201,42 @@ body,
   color: white;
   padding: 20px 30px;
   border-radius: 8px;
-  text-align: center;
+  text-align: left;
   max-width: 400px;
-  opacity: 1;
+}
+
+.battlefield-rules h2 {
+  margin-top: 0;
+  margin-bottom: 10px;
+  text-align: center;
+}
+
+/* Round over overlay */
+.round-over-overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1006;
+  background-color: rgba(0, 0, 0, 0.85);
+  color: white;
+  padding: 20px 30px;
+  border-radius: 8px;
+  text-align: center;
+  font-size: 24px;
+  font-weight: bold;
+  opacity: 0;
   transition: opacity 0.5s ease;
+}
+
+.round-over-overlay.visible {
+  opacity: 1;
+}
+
+/* Optional: remove darkened effect once round is over */
+.battlefield-container.round-over .battlefield-background {
+  filter: brightness(100%);
+  transition: filter 1s ease;
 }
 
 /* Hide sidebars when .hide-sidebars is applied */
@@ -237,5 +262,11 @@ body,
   .battlefield-controls {
     top: 120px;
     max-width: 200px;
+    gap: 8px;
+  }
+
+  .battlefield-controls button {
+    font-size: 12px;
+    padding: 8px 10px;
   }
 }
