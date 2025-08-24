@@ -19,12 +19,12 @@ export default function Battlefield({
   playersFromLobby = [],
   assetsFromServer = [],
   onPlaceAsset,
+  onCollectAsset, // New prop for triggering animation
 }) {
   const [players, setPlayers] = useState(playersFromLobby || []);
   const [assets, setAssets] = useState(assetsFromServer || []);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [localBackground, setLocalBackground] = useState(selectedBackground);
-  const [battleOver, setBattleOver] = useState(false);
 
   useEffect(() => setAssets(assetsFromServer || []), [assetsFromServer]);
   useEffect(() => setPlayers(playersFromLobby || []), [playersFromLobby]);
@@ -49,16 +49,13 @@ export default function Battlefield({
           player.x = newX;
           player.y = newY;
 
-          // Check flashlight overlap with assets
+          // Check if player found any assets
           setAssets((prevAssets) =>
             prevAssets.map((asset) => {
-              if (!asset.found) {
-                const dx = Math.abs(asset.x - newX);
-                const dy = Math.abs(asset.y - newY);
-                if (dx <= 1 && dy <= 1) {
-                  // Asset found by player
-                  return { ...asset, found: true };
-                }
+              if (!asset.found && asset.x === newX && asset.y === newY) {
+                // Trigger collection animation
+                if (onCollectAsset) onCollectAsset(asset.id);
+                return { ...asset, found: true }; // mark as found for this player
               }
               return asset;
             })
@@ -97,14 +94,7 @@ export default function Battlefield({
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [gameStarted, inBattlefield]);
-
-  // Monitor if all assets are found
-  useEffect(() => {
-    if (assets.length > 0 && assets.every((asset) => asset.found)) {
-      setBattleOver(true);
-    }
-  }, [assets]);
+  }, [gameStarted, inBattlefield, onCollectAsset]);
 
   const handleDrop = (e) => {
     e.preventDefault();
@@ -138,7 +128,7 @@ export default function Battlefield({
 
   return (
     <div className={`battlefield-wrapper ${isFullscreen ? "fullscreen" : ""}`}>
-      {/* Sidebars only visible to host/creator and not fullscreen */}
+      {/* Host/creator sidebars visible only if not fullscreen */}
       {isHostOrCreator && battlefieldOpen && !isFullscreen && (
         <>
           <BackgroundSidebar
@@ -150,7 +140,7 @@ export default function Battlefield({
         </>
       )}
 
-      {/* Fullscreen toggle */}
+      {/* Fullscreen toggle button */}
       <div className="battlefield-controls">
         {battlefieldOpen && (
           <button
@@ -162,11 +152,9 @@ export default function Battlefield({
         )}
       </div>
 
-      {/* Battlefield container */}
+      {/* Battlefield grid */}
       <div
-        className={`battlefield-container ${gameStarted ? "game-started" : ""} ${
-          battleOver ? "battle-over" : ""
-        }`}
+        className={`battlefield-container ${gameStarted ? "game-started" : ""}`}
         onDragOver={handleDragOver}
         onDrop={handleDrop}
       >
@@ -175,7 +163,6 @@ export default function Battlefield({
             src={localBackground}
             alt="Background"
             className="battlefield-background"
-            style={{ filter: battleOver ? "brightness(100%)" : "brightness(20%)" }}
           />
         )}
         <div className="grid">{gridCells}</div>
@@ -193,7 +180,7 @@ export default function Battlefield({
               {player.name[0]}
             </div>
 
-            {!isHostOrCreator && gameStarted && !battleOver && (
+            {!isHostOrCreator && gameStarted && (
               <div
                 className="flashlight"
                 style={{
@@ -207,15 +194,12 @@ export default function Battlefield({
 
         {/* Assets */}
         {assets.map((asset) => {
-          // Do not show assets if found (they return to sidebar)
-          if (asset.found) return null;
-
+          if (asset.found) return null; // hide found assets on grid
           const visible =
             isHostOrCreator ||
             players.some(
               (p) => Math.abs(p.x - asset.x) <= 1 && Math.abs(p.y - asset.y) <= 1
             );
-
           return (
             <div
               key={asset.id}
@@ -231,14 +215,6 @@ export default function Battlefield({
           );
         })}
       </div>
-
-      {/* Battle round over overlay */}
-      {battleOver && (
-        <div className="battlefield-rules">
-          <h2>Battle Round Over!</h2>
-          <p>All assets have been found. The battlefield is fully lit.</p>
-        </div>
-      )}
     </div>
   );
 }
