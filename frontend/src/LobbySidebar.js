@@ -1,10 +1,11 @@
+// src/LobbySidebar.js
 import React, { useState, useEffect } from "react";
 import { socket } from "./socket";
 import Dice from "./components/Dice";
 import "./LobbySidebar.css";
 
 export default function LobbySidebar({
-  currentUser,          // { id, username, role }
+  currentUser = {},
   gameStarted,
   battlefieldOpen,
   onOpenBattlefield,
@@ -13,22 +14,24 @@ export default function LobbySidebar({
   isFullScreen,
   onToggleFullScreen,
 }) {
-  const [creator, setCreator] = useState(null);  // { id, username, role }
-  const [host, setHost] = useState(null);        // { id, username, role }
-  const [players, setPlayers] = useState([]);    // array of { id, username, role }
+  const [creator, setCreator] = useState(null);
+  const [host, setHost] = useState(null);
+  const [players, setPlayers] = useState([]);
   const [battlefieldPlayers, setBattlefieldPlayers] = useState([]);
   const [selectedDie, setSelectedDie] = useState("d6");
   const [diceResult, setDiceResult] = useState(null);
   const [rolling, setRolling] = useState(false);
   const [dicePosition, setDicePosition] = useState({ x: 0, y: 0 });
   const [rotation, setRotation] = useState({ x: 0, y: 0 });
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
 
   const diceTypes = ["d4", "d6", "d8", "d10", "d20", "d50"];
 
+  // Listen to lobby updates from server
   useEffect(() => {
     socket.on("lobbyUpdate", (lobby) => {
-      setCreator(lobby.creator);
-      setHost(lobby.host);
+      setCreator(lobby.creator || null);
+      setHost(lobby.host || null);
       setPlayers(lobby.players || []);
       setBattlefieldPlayers(lobby.battlefieldPlayers || []);
     });
@@ -50,6 +53,7 @@ export default function LobbySidebar({
     };
   }, []);
 
+  // Dice roll animation
   const handleRollDice = () => {
     if (!selectedDie) return;
     setRolling(true);
@@ -80,117 +84,153 @@ export default function LobbySidebar({
     requestAnimationFrame(animate);
   };
 
+  // Player actions
   const handleLeaveLobby = () => {
+    if (!currentUser?.id) return;
     socket.emit("leaveLobby", currentUser.id);
+
+    // Clear client-side state immediately
+    setCreator(null);
+    setHost(null);
+    setPlayers([]);
+    setBattlefieldPlayers([]);
   };
 
-  const handleJoinBattlefield = () => {
+  const handleJoinBattlefield = () =>
     socket.emit("joinBattlefield", currentUser.id);
-  };
-
-  const handleLeaveBattlefield = () => {
+  const handleLeaveBattlefield = () =>
     socket.emit("leaveBattlefield", currentUser.id);
-  };
-
-  const handleRemovePlayer = (playerId) => {
+  const handleRemovePlayer = (playerId) =>
     socket.emit("removePlayer", playerId);
-  };
+  const handleClearLobby = () =>
+    socket.emit("clearLobby", { role: currentUser.role });
 
-  const handleClearLobby = () => {
-    socket.emit("clearLobby");
-  };
+  const toggleMobileSidebar = () => setIsMobileOpen(!isMobileOpen);
 
-  const isInBattlefield = battlefieldPlayers.includes(currentUser.id);
-  const creatorRoleLabel = creator && host && creator.id === host.id ? "Creator & Host" : "Creator";
+  const isInBattlefield = currentUser?.id
+    ? battlefieldPlayers.includes(currentUser.id)
+    : false;
+
+  const isCreatorOrHost =
+    currentUser?.role === "creator" || currentUser?.role === "host";
 
   return (
-    <div className={`lobby-sidebar ${isFullScreen ? "hidden" : ""}`}>
-      {/* Player List */}
-      <ul className="player-list">
-        {creator && (
-          <li className={creator.id === host?.id ? "creator-host" : ""}>
-            {creator.username} ({creatorRoleLabel})
-          </li>
-        )}
-        {host && creator?.id !== host.id && <li className="creator-host">{host.username} (Host)</li>}
-        {players.map((p) => (
-          <li key={p.id}>
-            {p.username}
-            {(currentUser.role === "creator" || currentUser.role === "host") && p.id !== currentUser.id && (
-              <button onClick={() => handleRemovePlayer(p.id)}>Remove</button>
-            )}
-          </li>
-        ))}
-      </ul>
+    <>
+      {isMobileOpen && (
+        <div className="mobile-backdrop" onClick={toggleMobileSidebar}></div>
+      )}
 
-      {/* Dice Selection */}
-      <div className="dice-selection">
-        <h3>Select Dice</h3>
-        <div className="dice-thumbnails">
-          {diceTypes.map((die) => (
-            <div
-              key={die}
-              className={selectedDie === die ? "selected-dice" : ""}
-              onClick={() => setSelectedDie(die)}
-            >
-              <Dice type={die} size={40} />
-            </div>
-          ))}
+      <div
+        className={`lobby-sidebar ${isFullScreen ? "hidden" : ""} ${
+          isMobileOpen ? "mobile-open" : ""
+        }`}
+      >
+        {/* Mobile toggle button */}
+        <div className="mobile-toggle" onClick={toggleMobileSidebar}>
+          ☰
         </div>
-      </div>
 
-      {/* Roll Dice */}
-      <div className="dice-area">
-        <button className="roll-dice-btn" onClick={handleRollDice}>
-          Roll Dice
-        </button>
-        {rolling && (
-          <div
-            className="rolling-dice"
-            style={{
-              top: dicePosition.y,
-              left: dicePosition.x,
-              transform: `rotateX(${rotation.x}deg) rotateY(${rotation.y}deg)`,
-            }}
-          >
-            <Dice type={selectedDie} size={40} />
+        {/* Players list */}
+        <ul className="player-list">
+          {creator && (
+            <li
+              className={creator?.id === host?.id ? "creator-host" : "creator"}
+            >
+              {creator.username} (
+              {creator?.id === host?.id ? "Creator & Host" : "Creator"})
+            </li>
+          )}
+          {host && host?.id !== creator?.id && (
+            <li className="host">{host.username} (Host)</li>
+          )}
+          {players.map((p) => (
+            <li key={p.id}>
+              {p.username}{" "}
+              {isCreatorOrHost && p.id !== currentUser.id && (
+                <button onClick={() => handleRemovePlayer(p.id)}>Remove</button>
+              )}
+            </li>
+          ))}
+        </ul>
+
+        {/* Dice selection */}
+        <div className="dice-selection">
+          <h3>Select Dice</h3>
+          <div className="dice-thumbnails">
+            {diceTypes.map((die) => (
+              <div
+                key={die}
+                className={selectedDie === die ? "selected-dice" : ""}
+                onClick={() => setSelectedDie(die)}
+              >
+                <Dice type={die} size={40} />
+              </div>
+            ))}
           </div>
-        )}
-        {diceResult && (
-          <p className="dice-result">
-            {diceResult.username} rolled {diceResult.value} on {diceResult.type.toUpperCase()}
-          </p>
-        )}
-      </div>
+        </div>
 
-      {/* Fullscreen toggle */}
-      <button className="fullscreen-button" onClick={onToggleFullScreen}>
-        {isFullScreen ? "Exit Full-Screen" : "Full-Screen"}
-      </button>
+        <div className="dice-area">
+          <button className="roll-dice-btn" onClick={handleRollDice}>
+            Roll Dice
+          </button>
+          {rolling && (
+            <div
+              className="rolling-dice"
+              style={{
+                top: dicePosition.y,
+                left: dicePosition.x,
+                transform: `rotateX(${rotation.x}deg) rotateY(${rotation.y}deg)`,
+              }}
+            >
+              <Dice type={selectedDie} size={40} />
+            </div>
+          )}
+          {diceResult && (
+            <p className="dice-result">
+              {diceResult.username} rolled {diceResult.value} on{" "}
+              {diceResult.type.toUpperCase()}
+            </p>
+          )}
+        </div>
 
-      {/* Player Controls */}
-      {currentUser.role === "player" && (
+        {/* Fullscreen toggle */}
+        <button className="fullscreen-button" onClick={onToggleFullScreen}>
+          {isFullScreen ? "Exit Full-Screen" : "Full-Screen"}
+        </button>
+
+        {/* Lobby Controls */}
         <div className="lobby-controls">
           <button onClick={handleLeaveLobby}>Leave Lobby</button>
-          {!isInBattlefield && battlefieldOpen && <button onClick={handleJoinBattlefield}>Join Battlefield</button>}
-          {isInBattlefield && <button onClick={handleLeaveBattlefield}>Leave Battlefield</button>}
-        </div>
-      )}
 
-      {/* Host/Creator Controls */}
-      {(currentUser.role === "host" || currentUser.role === "creator") && (
-        <div className="lobby-controls">
-          {!battlefieldOpen && (
+          {isCreatorOrHost && !battlefieldOpen && (
+            <button onClick={onOpenBattlefield}>Open Battlefield</button>
+          )}
+          {isCreatorOrHost && battlefieldOpen && !gameStarted && (
+            <button onClick={onStartGame}>Start Game</button>
+          )}
+          {isCreatorOrHost && gameStarted && (
+            <button onClick={onEndGame}>End Game</button>
+          )}
+          {isCreatorOrHost && (
+            <button onClick={handleClearLobby}>Clear Lobby</button>
+          )}
+
+          {!isCreatorOrHost && battlefieldOpen && (
             <>
-              <button onClick={handleLeaveLobby}>Leave Lobby</button>
-              <button onClick={onOpenBattlefield}>Open Battlefield</button>
+              {!isInBattlefield && (
+                <button onClick={handleJoinBattlefield}>
+                  Join Battlefield
+                </button>
+              )}
+              {isInBattlefield && (
+                <button onClick={handleLeaveBattlefield}>
+                  Leave Battlefield
+                </button>
+              )}
             </>
           )}
-          {battlefieldOpen && !gameStarted && <button onClick={onStartGame}>Start Game</button>}
-          {gameStarted && <button onClick={onEndGame}>End Game</button>}
-          {currentUser.role === "creator" && <button onClick={handleClearLobby}>Clear Lobby</button>}
         </div>
-      )}
-    </div>
+      </div>
+    </>
   );
 }

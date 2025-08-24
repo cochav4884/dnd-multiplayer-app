@@ -13,24 +13,34 @@ export default function Battlefield({
   battlefieldOpen,
   gameStarted,
   selectedBackground,
+  hideSidebars,
+  inBattlefield,
+  onJoinBattlefield,
+  onLeaveBattlefield,
+  playersFromLobby = [],
+  assetsFromServer = [],
+  onPlaceAsset,
 }) {
   const [players, setPlayers] = useState([]);
-  const [assets, setAssets] = useState([]);
+  const [assets, setAssets] = useState(assetsFromServer || []);
   const [isFullScreen, setFullScreen] = useState(false);
   const [localBackground, setLocalBackground] = useState(selectedBackground);
-  const [hideSidebars, setHideSidebars] = useState(false);
+  const [localHideSidebars, setLocalHideSidebars] = useState(hideSidebars);
 
-  // Initialize default player
+  // Sync assets from server
   useEffect(() => {
-    if (players.length === 0 && gameStarted) {
-      setPlayers([{ name: "You", x: 0, y: 0 }]);
-    }
-  }, [gameStarted, players.length]);
+    setAssets(assetsFromServer || []);
+  }, [assetsFromServer]);
+
+  // Sync players in battlefield
+  useEffect(() => {
+    setPlayers(playersFromLobby || []);
+  }, [playersFromLobby]);
 
   // Player movement
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (!gameStarted) return;
+      if (!gameStarted || !inBattlefield) return;
 
       const movePlayer = (playerIndex, dx, dy) => {
         setPlayers((prev) => {
@@ -41,11 +51,7 @@ export default function Battlefield({
 
           if (newX < 0 || newX >= GRID_COLUMNS || newY < 0 || newY >= GRID_ROWS)
             return prev;
-          if (
-            newPlayers.some(
-              (p, idx) => idx !== playerIndex && p.x === newX && p.y === newY
-            )
-          )
+          if (newPlayers.some((p, idx) => idx !== playerIndex && p.x === newX && p.y === newY))
             return prev;
 
           player.x = newX;
@@ -54,7 +60,7 @@ export default function Battlefield({
           // Check for asset found
           setAssets((prevAssets) =>
             prevAssets.map((asset) =>
-              !asset.found && asset.x === player.x && asset.y === player.y
+              !asset.found && asset.x === newX && asset.y === newY
                 ? { ...asset, found: true }
                 : asset
             )
@@ -93,29 +99,19 @@ export default function Battlefield({
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [gameStarted]);
+  }, [gameStarted, inBattlefield]);
 
   // Asset placement
-  const handlePlaceAsset = (assetId, x, y) => {
-    if (x < 0 || x >= GRID_COLUMNS || y < 0 || y >= GRID_ROWS) return;
-    setAssets((prev) =>
-      prev.map((asset) =>
-        asset.id === parseInt(assetId)
-          ? { ...asset, x, y, found: false }
-          : asset
-      )
-    );
-  };
-
-  const handleDragOver = (e) => e.preventDefault();
   const handleDrop = (e) => {
     e.preventDefault();
     const assetId = parseInt(e.dataTransfer.getData("assetId"));
     const rect = e.currentTarget.getBoundingClientRect();
     const x = Math.floor((e.clientX - rect.left) / GRID_SIZE);
     const y = Math.floor((e.clientY - rect.top) / GRID_SIZE);
-    handlePlaceAsset(assetId, x, y);
+    onPlaceAsset(assetId, x, y);
   };
+
+  const handleDragOver = (e) => e.preventDefault();
 
   // Generate grid cells
   const gridCells = [];
@@ -139,36 +135,49 @@ export default function Battlefield({
   return (
     <div
       className={`battlefield-wrapper ${isFullScreen ? "fullscreen" : ""} ${
-        hideSidebars ? "hide-sidebars" : ""
+        localHideSidebars ? "hide-sidebars" : ""
       }`}
     >
-      {/* Sidebars for host/creator */}
-      {(userRole === "host" || userRole === "creator") &&
-        battlefieldOpen &&
-        !isFullScreen &&
-        !hideSidebars && (
-          <>
-            <BackgroundSidebar
-              selectedBackground={localBackground}
-              onSelect={setLocalBackground}
-              userRole={userRole}
-            />
-            <AssetsSidebar
-              onPlaceAsset={handlePlaceAsset}
-              userRole={userRole}
-            />
-          </>
-        )}
+      {/* Right sidebars for host/creator */}
+      {(userRole === "host" || userRole === "creator") && battlefieldOpen && !localFullScreen && !localHideSidebars && (
+        <>
+          <BackgroundSidebar
+            selectedBackground={localBackground}
+            onSelect={setLocalBackground}
+            userRole={userRole}
+          />
+          <AssetsSidebar
+            userRole={userRole}
+            onPlaceAsset={onPlaceAsset}
+          />
+        </>
+      )}
 
-      {/* Fullscreen & Sidebar Toggle */}
+      {/* Fullscreen & toggle buttons */}
       <div className="battlefield-controls">
-        <button onClick={() => setFullScreen((prev) => !prev)}>
+        <button
+          className="fullscreen-btn"
+          onClick={() => setFullScreen((prev) => !prev)}
+        >
           {isFullScreen ? "Exit Full Screen" : "Full Screen"}
         </button>
         {battlefieldOpen && !gameStarted && (
-          <button onClick={() => setHideSidebars((prev) => !prev)}>
-            {hideSidebars ? "Show Sidebars" : "Hide Sidebars"}
+          <button
+            className="toggle-sidebars-btn"
+            onClick={() => setLocalHideSidebars((prev) => !prev)}
+          >
+            {localHideSidebars ? "Show Sidebars" : "Hide Sidebars"}
           </button>
+        )}
+        {!["host", "creator"].includes(userRole) && battlefieldOpen && (
+          <>
+            {!inBattlefield && (
+              <button onClick={onJoinBattlefield}>Join Battlefield</button>
+            )}
+            {inBattlefield && (
+              <button onClick={onLeaveBattlefield}>Leave Battlefield</button>
+            )}
+          </>
         )}
       </div>
 
@@ -187,29 +196,22 @@ export default function Battlefield({
           />
         )}
 
-        {/* Grid overlay */}
         <div className="grid">{gridCells}</div>
 
         {/* Players */}
         {players.map((player) => (
-          <div
-            key={player.name}
-            className="player"
-            style={{ left: player.x * GRID_SIZE, top: player.y * GRID_SIZE }}
-          >
-            {player.name[0]}
-          </div>
-        ))}
-
-        {/* Players + Flashlight */}
-        {players.map((player) => (
-          <React.Fragment key={player.name}>
+          <React.Fragment key={player.id || player.name}>
             <div
               className="player"
-              style={{ left: player.x * GRID_SIZE, top: player.y * GRID_SIZE }}
+              style={{
+                left: player.x * GRID_SIZE,
+                top: player.y * GRID_SIZE,
+              }}
             >
               {player.name[0]}
             </div>
+
+            {/* Flashlight for non-host/creator */}
             {!["host", "creator"].includes(userRole) && gameStarted && (
               <div
                 className="flashlight"
@@ -229,8 +231,7 @@ export default function Battlefield({
             userRole === "host" ||
             userRole === "creator" ||
             players.some(
-              (p) =>
-                Math.abs(p.x - asset.x) <= 1 && Math.abs(p.y - asset.y) <= 1
+              (p) => Math.abs(p.x - asset.x) <= 1 && Math.abs(p.y - asset.y) <= 1
             );
           return (
             <div

@@ -5,7 +5,7 @@ import axios from "axios";
 import "./Login.css";
 
 export default function Login() {
-  const { user, setUser } = useContext(UserContext); // Track logged-in user
+  const { user, setUser } = useContext(UserContext);
   const [role, setRole] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -15,16 +15,24 @@ export default function Login() {
   const handleLogin = async () => {
     setError("");
     setMessage("");
+
+    // Normalize role for backend
+    // "creator & host" -> "creator-host"
+    const backendRole = role.toLowerCase().replace(/ & /, "-");
+
     try {
       const res = await axios.post("http://localhost:5000/login", {
-        role,
+        role: backendRole,
         username,
         password,
+        dualRole: backendRole === "creator-host", // flag for backend
       });
 
       if (res.data.success) {
-        setUser({ name: username, role });
-        connectSocket(username, role); // existing socket logic
+        // Keep displayRole for UI purposes
+        const displayRole = role;
+        setUser({ name: username, role: backendRole, displayRole });
+        connectSocket(username, backendRole);
         setMessage(res.data.message);
       } else {
         setError(res.data.message);
@@ -41,7 +49,7 @@ export default function Login() {
         role: user.role,
         username: user.name,
       });
-      setUser(null); // reset user context
+      setUser(null);
       setUsername("");
       setPassword("");
       setRole("");
@@ -54,6 +62,7 @@ export default function Login() {
   return (
     <div className="login-page">
       <h1>Welcome to Horizon</h1>
+
       {!user ? (
         <div className="login-form">
           <label>
@@ -67,7 +76,9 @@ export default function Login() {
             </select>
           </label>
 
-          {(role === "creator" || role === "host" || role === "creator & host") && (
+          {(role === "creator" ||
+            role === "host" ||
+            role === "creator & host") && (
             <>
               <input
                 type="text"
@@ -94,12 +105,15 @@ export default function Login() {
           )}
 
           <button onClick={handleLogin}>Login</button>
+
           {error && <p className="error">{error}</p>}
           {message && <p className="success">{message}</p>}
         </div>
       ) : (
         <div className="logout-section">
-          <p>Logged in as: {user.name} ({user.role})</p>
+          <p>
+            Logged in as: {user.name} ({user.displayRole})
+          </p>
           <button onClick={handleLogout}>Logout</button>
           {message && <p className="success">{message}</p>}
         </div>
