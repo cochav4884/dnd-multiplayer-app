@@ -1,7 +1,9 @@
 // src/components/Battlefield.js
 import React, { useState, useEffect } from "react";
+import { socket } from "../socket";
 import BackgroundSidebar from "./BackgroundSidebar";
 import AssetsSidebar from "./AssetsSidebar";
+import Dice from "./Dice";
 import "./Battlefield.css";
 
 const GRID_SIZE = 15;
@@ -25,26 +27,41 @@ export default function Battlefield({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [localBackground, setLocalBackground] = useState(selectedBackground);
   const [roundOver, setRoundOver] = useState(false);
+  const [diceRolls, setDiceRolls] = useState([]); // Track live dice rolls
 
-  useEffect(() => setAssets(assetsFromServer || []), [assetsFromServer]);
+  const isHostOrCreator = userRole === "host" || userRole === "creator";
+
+  // Sync players/assets when props change
   useEffect(() => setPlayers(playersFromLobby || []), [playersFromLobby]);
+  useEffect(() => setAssets(assetsFromServer || []), [assetsFromServer]);
 
-  // Check if all assets are found
+  // Round over detection
   useEffect(() => {
-    if (assets.length > 0 && assets.every((asset) => asset.found)) {
-      setRoundOver(true);
-    } else {
-      setRoundOver(false);
-    }
+    setRoundOver(
+      assets.length > 0 && assets.every((asset) => asset.found)
+    );
   }, [assets]);
+
+  // Listen for dice rolls from server
+  useEffect(() => {
+    const handleDiceRolled = (data) => {
+      setDiceRolls((prev) => [...prev, data]);
+      setTimeout(() => {
+        setDiceRolls((prev) => prev.filter((d) => d !== data));
+      }, 3000);
+    };
+    socket.on("diceRolled", handleDiceRolled);
+    return () => socket.off("diceRolled", handleDiceRolled);
+  }, []);
 
   // Player movement
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (!gameStarted || !inBattlefield || roundOver) return;
+      if (!gameStarted || !inBattlefield || roundOver || players.length === 0) return;
 
       const movePlayer = (playerIndex, dx, dy) => {
         setPlayers((prev) => {
+          if (!prev[playerIndex]) return prev;
           const newPlayers = [...prev];
           const player = newPlayers[playerIndex];
           const newX = player.x + dx;
@@ -52,6 +69,7 @@ export default function Battlefield({
 
           if (newX < 0 || newX >= GRID_COLUMNS || newY < 0 || newY >= GRID_ROWS)
             return prev;
+
           if (newPlayers.some((p, idx) => idx !== playerIndex && p.x === newX && p.y === newY))
             return prev;
 
@@ -99,7 +117,7 @@ export default function Battlefield({
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [gameStarted, inBattlefield, roundOver]);
+  }, [gameStarted, inBattlefield, roundOver, players]);
 
   const handleDrop = (e) => {
     e.preventDefault();
@@ -107,10 +125,12 @@ export default function Battlefield({
     const rect = e.currentTarget.getBoundingClientRect();
     const x = Math.floor((e.clientX - rect.left) / GRID_SIZE);
     const y = Math.floor((e.clientY - rect.top) / GRID_SIZE);
-    onPlaceAsset(assetId, x, y);
+    if (onPlaceAsset) onPlaceAsset(assetId, x, y);
   };
+
   const handleDragOver = (e) => e.preventDefault();
 
+  // Build grid
   const gridCells = [];
   for (let y = 0; y < GRID_ROWS; y++) {
     for (let x = 0; x < GRID_COLUMNS; x++) {
@@ -118,22 +138,14 @@ export default function Battlefield({
         <div
           key={`${x}-${y}`}
           className="grid-square"
-          style={{
-            width: GRID_SIZE,
-            height: GRID_SIZE,
-            left: x * GRID_SIZE,
-            top: y * GRID_SIZE,
-          }}
+          style={{ width: GRID_SIZE, height: GRID_SIZE, left: x * GRID_SIZE, top: y * GRID_SIZE }}
         />
       );
     }
   }
 
-  const isHostOrCreator = userRole === "host" || userRole === "creator";
-
   return (
     <div className={`battlefield-wrapper ${isFullscreen ? "fullscreen" : ""}`}>
-      {/* Host/creator sidebars visible only if not fullscreen */}
       {isHostOrCreator && battlefieldOpen && !isFullscreen && (
         <>
           <BackgroundSidebar
@@ -145,21 +157,13 @@ export default function Battlefield({
         </>
       )}
 
-      {/* Battlefield controls for players */}
       <div className="battlefield-controls">
-        {/* Non-host players see Join/Leave Battlefield buttons */}
         {battlefieldOpen && !isHostOrCreator && (
           <>
-            {!inBattlefield && (
-              <button onClick={onJoinBattlefield}>Join Battlefield</button>
-            )}
-            {inBattlefield && (
-              <button onClick={onLeaveBattlefield}>Leave Battlefield</button>
-            )}
+            {!inBattlefield && <button onClick={onJoinBattlefield}>Join Battlefield</button>}
+            {inBattlefield && <button onClick={onLeaveBattlefield}>Leave Battlefield</button>}
           </>
         )}
-
-        {/* Full Screen toggle visible to any player inside Battlefield */}
         {inBattlefield && (
           <button onClick={() => setIsFullscreen((prev) => !prev)}>
             {isFullscreen ? "Exit Full Screen" : "Full Screen"}
@@ -167,76 +171,54 @@ export default function Battlefield({
         )}
       </div>
 
-      {/* Battlefield grid */}
       <div
         className={`battlefield-container ${gameStarted ? "game-started" : ""} ${roundOver ? "round-over" : ""}`}
         onDragOver={handleDragOver}
         onDrop={handleDrop}
       >
-        {localBackground && (
-          <img
-            src={localBackground}
-            alt="Background"
-            className="battlefield-background"
-          />
-        )}
+        {localBackground && <img src={localBackground} alt="Background" className="battlefield-background" />}
         <div className="grid">{gridCells}</div>
 
         {/* Players */}
         {players.map((player) => (
           <React.Fragment key={player.id || player.name}>
-            <div
-              className="player"
-              style={{
-                left: player.x * GRID_SIZE,
-                top: player.y * GRID_SIZE,
-              }}
-            >
-              {player.name[0]}
-            </div>
+            {player?.x != null && player?.y != null && (
+              <>
+                <div className="player" style={{ left: player.x * GRID_SIZE, top: player.y * GRID_SIZE }}>
+                  {player.name ? player.name[0] : "?"}
+                </div>
 
-            {/* Flashlight disappears when round is over */}
-            {!isHostOrCreator && gameStarted && !roundOver && (
-              <div
-                className="flashlight"
-                style={{
-                  left: player.x * GRID_SIZE + GRID_SIZE / 2,
-                  top: player.y * GRID_SIZE + GRID_SIZE / 2,
-                }}
-              />
+                {!isHostOrCreator && gameStarted && !roundOver && (
+                  <div className="flashlight visible" style={{ left: player.x * GRID_SIZE + GRID_SIZE / 2, top: player.y * GRID_SIZE + GRID_SIZE / 2 }} />
+                )}
+              </>
             )}
           </React.Fragment>
         ))}
 
-        {/* Assets */}
-        {assets.map((asset) => {
-          if (asset.found) return null;
-          const visible =
-            isHostOrCreator ||
-            players.some(
-              (p) => Math.abs(p.x - asset.x) <= 1 && Math.abs(p.y - asset.y) <= 1
-            );
+        {/* Live Dice Rolls */}
+        {diceRolls.map((roll, idx) => {
+          const player = players.find((p) => p.username === roll.username);
+          if (!player) return null;
           return (
-            <div
-              key={asset.id}
-              className="asset"
-              style={{
-                left: asset.x * GRID_SIZE,
-                top: asset.y * GRID_SIZE,
-                display: visible ? "flex" : "none",
-              }}
-            >
-              {asset.name[0]}
+            <div key={idx} className="player-dice" style={{ position: "absolute", left: player.x * GRID_SIZE, top: player.y * GRID_SIZE - 20, zIndex: 5 }}>
+              <Dice type={roll.diceType} size={20} />
             </div>
           );
         })}
 
-        {/* Round over overlay */}
-        {roundOver && (
-          <div className="round-over-overlay">
-            <h2>Battle Round Over!</h2>
-          </div>
-        )}
+        {/* Assets */}
+        {assets.map((asset) => {
+          if (!asset || asset.found) return null;
+          const visible = isHostOrCreator || players.some((p) => Math.abs(p.x - asset.x) <= 1 && Math.abs(p.y - asset.y) <= 1);
+          return visible ? (
+            <div key={asset.id} className="asset" style={{ left: asset.x * GRID_SIZE, top: asset.y * GRID_SIZE }}>
+              {asset.name ? asset.name[0] : "?"}
+            </div>
+          ) : null;
+        })}
+
+        {roundOver && <div className="round-over-overlay visible"><h2>Battle Round Over!</h2></div>}
       </div>
     </div>
   );
