@@ -15,32 +15,13 @@ html, body, #root, .app-container {
 
 /* Fullscreen mode overrides */
 .fullscreen-mode {
-  display: block;
+  display: flex;
   width: 100vw;
   height: 100vh;
   overflow: hidden;
 }
 
-/* Battlefield wrapper */
-.battlefield-wrapper {
-  flex: 1;
-  display: flex;
-  justify-content: center;
-  align-items: stretch;
-  background-color: #111;
-  position: relative;
-  overflow: hidden;
-}
-
-.battlefield-content {
-  flex: 1;
-  position: relative;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-/* Left Lobby Sidebar */
+/* ---- Left Lobby Sidebar ---- */
 .lobby-sidebar {
   width: 250px;
   background-color: #222;
@@ -49,10 +30,51 @@ html, body, #root, .app-container {
   box-sizing: border-box;
   overflow-y: auto;
   transition: transform 0.3s ease;
+  flex-shrink: 0;
 }
 
 .lobby-sidebar.hidden {
   transform: translateX(-100%);
+}
+
+/* ---- Center Battlefield ---- */
+.battlefield-wrapper {
+  flex: 1;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #111;
+  overflow: hidden;
+  min-width: 0;
+}
+
+/* Battlefield content scaling */
+.battlefield-wrapper > * {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* ---- Right Host Sidebars ---- */
+.host-sidebars {
+  display: flex;
+  flex-direction: column;
+  width: 250px;
+  background-color: #1a1a1a;
+  color: #fff;
+  box-sizing: border-box;
+  padding: 10px;
+  overflow-y: auto;
+  flex-shrink: 0;
+}
+
+.host-sidebars > * {
+  margin-bottom: 15px;
+  flex: 1;
+  background-color: #2a2a2a;
+  border-radius: 6px;
+  padding: 10px;
 }
 
 /* Player list */
@@ -65,24 +87,7 @@ html, body, #root, .app-container {
 .player-list li {
   display: flex;
   justify-content: space-between;
-  align-items: center;
   margin-bottom: 5px;
-}
-
-.player-list button {
-  margin-left: 5px;
-  padding: 2px 5px;
-  font-size: 0.8em;
-  cursor: pointer;
-  background-color: #4caf50;
-  border: none;
-  color: white;
-  border-radius: 4px;
-  transition: background 0.2s;
-}
-
-.player-list button:hover {
-  background-color: #45a049;
 }
 
 /* Dice section */
@@ -95,6 +100,16 @@ html, body, #root, .app-container {
   box-shadow: 0 0 5px #4caf50;
 }
 
+/* Dice area */
+.dice-area {
+  margin-bottom: 20px;
+}
+
+.dice-result {
+  margin-top: 10px;
+  font-weight: bold;
+}
+
 /* Lobby controls buttons */
 .lobby-controls button {
   display: block;
@@ -102,41 +117,9 @@ html, body, #root, .app-container {
   width: 100%;
   padding: 5px;
   cursor: pointer;
-  background-color: #333;
-  color: #fff;
-  border: none;
-  border-radius: 4px;
-  transition: background 0.2s;
 }
 
-.lobby-controls button:hover {
-  background-color: #444;
-}
-
-/* Right sidebars (Background + Assets) */
-.host-sidebars {
-  display: flex;
-  flex-direction: column;
-  width: 250px;
-  position: absolute;
-  right: 0;
-  top: 0;
-  bottom: 0;
-  background-color: #1a1a1a;
-  padding: 10px;
-  overflow-y: auto;
-  z-index: 10;
-}
-
-.host-sidebars > * {
-  flex: 1;
-  margin-bottom: 15px;
-  background-color: #2a2a2a;
-  border-radius: 6px;
-  padding: 10px;
-}
-
-/* Toggle button */
+/* Toggle button for collapsing left LobbySidebar */
 .toggle-lobby {
   position: fixed;
   top: 50%;
@@ -161,25 +144,35 @@ html, body, #root, .app-container {
   background: #555;
 }
 
-/* Adjust toggle position when sidebar is open */
-.lobby-sidebar + .toggle-lobby {
+.sidebar-left-open + .toggle-lobby {
   left: 250px;
 }
 
-/* Battlefield grid */
-.battlefield-grid {
-  width: 100%;
-  height: 100%;
-  position: relative;
-  overflow: hidden;
+/* Fullscreen toggle button */
+.fullscreen-toggle {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  z-index: 1001;
+  padding: 8px 12px;
+  background-color: #444;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.2s;
 }
 
+.fullscreen-toggle:hover {
+  background-color: #555;
+}
+
+/* ---- Asset dragging (cross-browser user-select) ---- */
 .asset {
   position: absolute;
   cursor: grab;
-  -webkit-user-select: none; /* Safari */
+  -webkit-user-select: none; /* Safari / iOS */
   -moz-user-select: none;    /* Firefox */
   -ms-user-select: none;     /* IE/Edge */
   user-select: none;         /* Standard */
 }
-

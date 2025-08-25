@@ -29,10 +29,7 @@ export default function LobbySidebar({
 
   const diceTypes = ["d4", "d6", "d8", "d10", "d20", "d50"];
   const isCreatorOrHost = userRole === "creator" || userRole === "host";
-
-  const isInBattlefield = currentUser?.id
-    ? battlefieldPlayers.includes(currentUser.id)
-    : false;
+  const isInBattlefield = currentUser?.id ? battlefieldPlayers.includes(currentUser.id) : false;
 
   // --- Socket listeners ---
   useEffect(() => {
@@ -67,14 +64,14 @@ export default function LobbySidebar({
         username: currentUser?.username || "Unknown",
         diceType: selectedDie,
       });
-    }, 500); // simulate rolling animation
+    }, 500);
   };
 
   // --- Lobby actions ---
   const handleJoinBattlefieldClick = () => socket.emit("joinBattlefield", currentUser.id);
   const handleLeaveBattlefieldClick = () => socket.emit("leaveBattlefield", currentUser.id);
   const handleRemovePlayer = (id) => socket.emit("removePlayer", id);
-  const handleClearLobby = () => socket.emit("clearLobby", { role: userRole });
+  const handleClearLobby = () => socket.emit("clear-lobby");
 
   return (
     <div className="lobby-sidebar-inner">
@@ -94,9 +91,9 @@ export default function LobbySidebar({
             {diceRolls
               .filter((d) => d.username === p.username)
               .map((d, idx) => (
-                <div key={idx} className="sidebar-dice">
+                <div key={idx} className="dice-area">
                   <Dice type={d.diceType} size={20} />
-                  <span>{d.diceValue}</span>
+                  <span className="dice-result">{d.diceValue}</span>
                 </div>
               ))}
             {isCreatorOrHost && p.id !== currentUser.id && (
@@ -120,7 +117,7 @@ export default function LobbySidebar({
             </div>
           ))}
         </div>
-        <button onClick={handleRollDice} disabled={rolling}>
+        <button className="roll-dice-btn" onClick={handleRollDice} disabled={rolling}>
           {rolling ? "Rolling..." : "Roll Dice"}
         </button>
       </div>
@@ -141,7 +138,9 @@ export default function LobbySidebar({
           <button onClick={onEndGame}>End Game</button>
         )}
 
-        {isCreatorOrHost && <button onClick={handleClearLobby}>Clear Lobby</button>}
+        {isCreatorOrHost && (
+          <button onClick={handleClearLobby}>Clear Lobby</button>
+        )}
 
         {!isCreatorOrHost && battlefieldOpen && (
           <>

@@ -24,7 +24,7 @@ export default function App() {
 
   const isHostOrCreator = user?.role === "host" || user?.role === "creator";
 
-  // Connect socket
+  // Connect socket when user logs in
   useEffect(() => {
     if (user?.username && user?.role) {
       connectSocket(user.username, user.role);
@@ -73,68 +73,73 @@ export default function App() {
   return (
     <div className={`app-container ${isFullscreen ? "fullscreen-mode" : ""}`}>
       {/* Left Lobby Sidebar */}
-      <div className={`lobby-sidebar ${lobbyOpen ? "" : "hidden"}`}>
-        <LobbySidebar
-          currentUser={user}
-          setCurrentUser={setUser}
-          onLeaveLobby={handleLeaveLobby}
-          userRole={user.role}
-          gameStarted={gameStarted}
-          battlefieldOpen={battlefieldOpen}
-          inBattlefield={inBattlefield}
-          onOpenBattlefield={handleOpenBattlefield}
-          onStartGame={handleStartGame}
-          onEndGame={handleEndGame}
-          onJoinBattlefield={handleJoinBattlefield}
-          onLeaveBattlefield={handleLeaveBattlefield}
-          setPlayers={setPlayers}
-          setAssets={setAssets}
-        />
-      </div>
+      {!isFullscreen && lobbyOpen && (
+        <div className="lobby-sidebar">
+          <LobbySidebar
+            currentUser={user}
+            setCurrentUser={setUser}
+            onLeaveLobby={handleLeaveLobby}
+            userRole={user.role}
+            gameStarted={gameStarted}
+            battlefieldOpen={battlefieldOpen}
+            inBattlefield={inBattlefield}
+            onOpenBattlefield={handleOpenBattlefield}
+            onStartGame={handleStartGame}
+            onEndGame={handleEndGame}
+            onJoinBattlefield={handleJoinBattlefield}
+            onLeaveBattlefield={handleLeaveBattlefield}
+            setPlayers={setPlayers}
+            setAssets={setAssets}
+          />
+        </div>
+      )}
 
-      {/* Toggle button */}
-      <button
-        className="toggle-lobby"
-        onClick={() => setLobbyOpen((prev) => !prev)}
-      >
-        {lobbyOpen ? "⏪" : "⏩"}
-      </button>
+      {/* Toggle button for left sidebar */}
+      {!isFullscreen && (
+        <button
+          className="toggle-lobby"
+          onClick={() => setLobbyOpen((prev) => !prev)}
+        >
+          {lobbyOpen ? "⏪" : "⏩"}
+        </button>
+      )}
 
       {/* Center Battlefield */}
       <div className="battlefield-wrapper">
-        <div className="battlefield-content">
-          <Battlefield
-            userRole={user.role}
-            battlefieldOpen={battlefieldOpen}
-            gameStarted={gameStarted}
-            selectedBackground={selectedBackground}
-            inBattlefield={inBattlefield}
-            onJoinBattlefield={handleJoinBattlefield}
-            onLeaveBattlefield={handleLeaveBattlefield}
-            playersFromLobby={players}
-            assetsFromServer={assets}
-            onPlaceAsset={(assetId, x, y) =>
-              setAssets((prev) =>
-                prev.map((a) =>
-                  a.id === assetId ? { ...a, x, y, found: false } : a
-                )
-              )
-            }
-          />
-        </div>
-
-        {/* Right Sidebars */}
-        {isHostOrCreator && battlefieldOpen && (
-          <div className="host-sidebars">
-            <BackgroundSidebar
-              userRole={user.role}
-              selectedBackground={selectedBackground}
-              onSelect={setSelectedBackground}
-            />
-            <AssetsSidebar userRole={user.role} />
-          </div>
-        )}
+        <Battlefield
+          userRole={user.role}
+          battlefieldOpen={battlefieldOpen}
+          gameStarted={gameStarted}
+          selectedBackground={selectedBackground}
+          inBattlefield={inBattlefield}
+          onJoinBattlefield={handleJoinBattlefield}
+          onLeaveBattlefield={handleLeaveBattlefield}
+          playersFromLobby={players}
+          assetsFromServer={assets}
+          onPlaceAsset={(assetId, x, y) =>
+            setAssets((prev) =>
+              prev.map((a) => (a.id === assetId ? { ...a, x, y, found: false } : a))
+            )
+          }
+        />
       </div>
+
+      {/* Right host sidebars */}
+      {!isFullscreen && isHostOrCreator && battlefieldOpen && (
+        <div className="host-sidebars">
+          <BackgroundSidebar
+            userRole={user.role}
+            selectedBackground={selectedBackground}
+            onSelect={setSelectedBackground}
+          />
+          <AssetsSidebar userRole={user.role} />
+        </div>
+      )}
+
+      {/* Fullscreen toggle */}
+      <button className="fullscreen-button" onClick={toggleFullscreen}>
+        {isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
+      </button>
     </div>
   );
 }

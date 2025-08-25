@@ -1,3 +1,4 @@
+/* ---- Lobby Sidebar ---- */
 .lobby-sidebar {
   position: fixed;
   left: 0;
@@ -37,7 +38,7 @@
   width: 100%;
   height: 100%;
   background-color: rgba(0,0,0,0.5);
-  z-index: 1500; /* below the sidebar but above main content */
+  z-index: 1500;
 }
 
 /* Player list */
@@ -112,7 +113,7 @@
   transform: scale(1.1);
 }
 
-/* Roll dice */
+/* Roll dice button */
 .roll-dice-btn {
   padding: 6px 12px;
   background-color: #ff9800;
@@ -137,15 +138,6 @@
   margin-top: auto;
 }
 
-.rolling-dice {
-  position: absolute;
-  width: 40px;
-  height: 40px;
-  pointer-events: none;
-  z-index: 1000;
-  transition: transform 0.1s linear;
-}
-
 .dice-result {
   font-size: 13px;
   color: #fff;
@@ -155,7 +147,7 @@
   text-shadow: 0 1px 2px rgba(0,0,0,0.5);
 }
 
-/* Fullscreen toggle */
+/* Fullscreen toggle button */
 .fullscreen-button {
   width: 90%;
   margin: 0 auto 10px;
@@ -236,4 +228,12 @@
     font-size: 12px;
     padding: 6px 10px;
   }
+}
+
+/* Asset user-select fix for Safari */
+.asset {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
 }
