@@ -32,14 +32,14 @@ html, body, #root, .app-container {
   overflow: hidden;
 }
 
-/* Optional: ensure Battlefield scales correctly in fullscreen */
+/* Battlefield content scaling */
 .battlefield-wrapper > * {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-/* Lobby Sidebar adjustments */
+/* ---- Lobby Sidebar ---- */
 .lobby-sidebar {
   width: 250px;
   background-color: #222;
@@ -47,10 +47,11 @@ html, body, #root, .app-container {
   padding: 10px;
   box-sizing: border-box;
   overflow-y: auto;
+  transition: transform 0.3s ease;
 }
 
 .lobby-sidebar.hidden {
-  display: none;
+  transform: translateX(-100%);
 }
 
 /* Player list */
@@ -95,3 +96,60 @@ html, body, #root, .app-container {
   cursor: pointer;
 }
 
+/* ---- Right Sidebars (Background + Assets) ---- */
+.host-sidebars {
+  display: flex;
+  flex-direction: column;
+  width: 250px;
+  background-color: #1a1a1a;
+  color: #fff;
+  box-sizing: border-box;
+  padding: 10px;
+  overflow-y: auto;
+}
+
+.host-sidebars > * {
+  margin-bottom: 15px;
+  flex: 1;
+  background-color: #2a2a2a;
+  border-radius: 6px;
+  padding: 10px;
+}
+
+/* Ensure sidebars don’t overlap battlefield in fullscreen */
+.fullscreen-mode .host-sidebars {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+}
+
+/* Toggle button for collapsing left LobbySidebar */
+.toggle-lobby {
+  position: fixed;       /* fixed so it’s always visible */
+  top: 50%;              /* vertical center */
+  left: 0;               /* stick to left edge */
+  transform: translateY(-50%);
+  z-index: 1000;
+  background: #444;
+  color: white;
+  border: none;
+  padding: 5px;
+  width: 30px;           /* small peek tab width */
+  height: 60px;          /* vertical height */
+  cursor: pointer;
+  border-radius: 0 5px 5px 0; /* rounded only on right side */
+  writing-mode: vertical-rl;   /* text runs vertically */
+  text-orientation: mixed;
+  text-align: center;
+  transition: background 0.2s, left 0.3s;
+}
+
+.toggle-lobby:hover {
+  background: #555;
+}
+
+/* When lobby is open, move toggle button to the right of the sidebar */
+.sidebar-left-open + .toggle-lobby {
+  left: 250px; /* same as sidebar width */
+}

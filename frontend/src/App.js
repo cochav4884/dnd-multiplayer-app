@@ -8,7 +8,7 @@ import BackgroundSidebar from "./components/BackgroundSidebar";
 import AssetsSidebar from "./components/AssetsSidebar";
 import Battlefield from "./components/Battlefield";
 import "./App.css";
-import { socket, connectSocket, disconnectSocket } from "./socket"; // <-- import socket
+import { socket, connectSocket, disconnectSocket } from "./socket";
 
 export default function App() {
   const { user, setUser } = useContext(UserContext);
@@ -22,6 +22,7 @@ export default function App() {
 
   const [players, setPlayers] = useState([]);
   const [assets, setAssets] = useState([]);
+  const [lobbyOpen, setLobbyOpen] = useState(true); // <-- collapsible lobby
 
   const isHostOrCreator = user?.role === "host" || user?.role === "creator";
 
@@ -30,13 +31,10 @@ export default function App() {
     if (user?.username && user?.role) {
       connectSocket(user.username, user.role);
 
-      // Listen to lobby updates
       socket.on("lobbyUpdate", (lobby) => {
         setPlayers(lobby.players || []);
-        // optional: update other lobby state if needed
       });
     }
-
     return () => {
       disconnectSocket();
     };
@@ -44,7 +42,6 @@ export default function App() {
 
   const handleLeaveLobby = () => {
     if (!user) return;
-
     socket.emit("leaveLobby", user.id, (success) => {
       if (success) {
         setUser(null);
@@ -77,7 +74,10 @@ export default function App() {
 
   return (
     <div className={`app-container ${isFullscreen ? "fullscreen-mode" : ""}`}>
-      {(!isFullscreen || isHostOrCreator) && (
+      {/* Left Lobby Sidebar */}
+      <div
+        className={`sidebar left ${lobbyOpen ? "sidebar-left-open" : "hidden"}`}
+      >
         <LobbySidebar
           currentUser={user}
           setCurrentUser={setUser}
@@ -96,20 +96,18 @@ export default function App() {
           setPlayers={setPlayers}
           setAssets={setAssets}
         />
-      )}
+      </div>
 
+      {/* Toggle button for Lobby */}
+      <button
+        className="toggle-lobby"
+        onClick={() => setLobbyOpen((prev) => !prev)}
+      >
+        {lobbyOpen ? "⏪" : "⏩"}
+      </button>
+
+      {/* Battlefield center */}
       <div className="battlefield-wrapper">
-        {isHostOrCreator && battlefieldOpen && (
-          <div className="host-sidebars">
-            <BackgroundSidebar
-              userRole={user.role}
-              selectedBackground={selectedBackground}
-              onSelect={setSelectedBackground}
-            />
-            <AssetsSidebar userRole={user.role} />
-          </div>
-        )}
-
         <Battlefield
           userRole={user.role}
           battlefieldOpen={battlefieldOpen}
@@ -128,6 +126,18 @@ export default function App() {
             )
           }
         />
+
+        {/* Right Sidebars (Background + Assets) */}
+        {(!isFullscreen || isHostOrCreator) && (
+          <div className="host-sidebars">
+            <BackgroundSidebar
+              userRole={user.role}
+              selectedBackground={selectedBackground}
+              onSelect={setSelectedBackground}
+            />
+            <AssetsSidebar userRole={user.role} />
+          </div>
+        )}
       </div>
     </div>
   );
