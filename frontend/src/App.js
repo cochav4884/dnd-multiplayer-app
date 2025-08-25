@@ -1,4 +1,3 @@
-// src/App.js
 import React, { useContext, useState, useEffect } from "react";
 import { UserContext } from "./UserContext";
 import { useNavigate } from "react-router-dom";
@@ -19,14 +18,13 @@ export default function App() {
   const [battlefieldOpen, setBattlefieldOpen] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [inBattlefield, setInBattlefield] = useState(false);
-
   const [players, setPlayers] = useState([]);
   const [assets, setAssets] = useState([]);
-  const [lobbyOpen, setLobbyOpen] = useState(true); // <-- collapsible lobby
+  const [lobbyOpen, setLobbyOpen] = useState(true);
 
   const isHostOrCreator = user?.role === "host" || user?.role === "creator";
 
-  // Connect socket when user logs in
+  // Connect socket
   useEffect(() => {
     if (user?.username && user?.role) {
       connectSocket(user.username, user.role);
@@ -35,13 +33,13 @@ export default function App() {
         setPlayers(lobby.players || []);
       });
     }
-    return () => {
-      disconnectSocket();
-    };
+
+    return () => disconnectSocket();
   }, [user]);
 
   const handleLeaveLobby = () => {
     if (!user) return;
+
     socket.emit("leaveLobby", user.id, (success) => {
       if (success) {
         setUser(null);
@@ -75,13 +73,11 @@ export default function App() {
   return (
     <div className={`app-container ${isFullscreen ? "fullscreen-mode" : ""}`}>
       {/* Left Lobby Sidebar */}
-      <div
-        className={`sidebar left ${lobbyOpen ? "sidebar-left-open" : "hidden"}`}
-      >
+      <div className={`lobby-sidebar ${lobbyOpen ? "" : "hidden"}`}>
         <LobbySidebar
           currentUser={user}
           setCurrentUser={setUser}
-          navigateToLogin={handleLeaveLobby}
+          onLeaveLobby={handleLeaveLobby}
           userRole={user.role}
           gameStarted={gameStarted}
           battlefieldOpen={battlefieldOpen}
@@ -91,14 +87,12 @@ export default function App() {
           onEndGame={handleEndGame}
           onJoinBattlefield={handleJoinBattlefield}
           onLeaveBattlefield={handleLeaveBattlefield}
-          isFullScreen={isFullscreen}
-          onToggleFullScreen={toggleFullscreen}
           setPlayers={setPlayers}
           setAssets={setAssets}
         />
       </div>
 
-      {/* Toggle button for Lobby */}
+      {/* Toggle button */}
       <button
         className="toggle-lobby"
         onClick={() => setLobbyOpen((prev) => !prev)}
@@ -106,29 +100,31 @@ export default function App() {
         {lobbyOpen ? "⏪" : "⏩"}
       </button>
 
-      {/* Battlefield center */}
+      {/* Center Battlefield */}
       <div className="battlefield-wrapper">
-        <Battlefield
-          userRole={user.role}
-          battlefieldOpen={battlefieldOpen}
-          gameStarted={gameStarted}
-          selectedBackground={selectedBackground}
-          inBattlefield={inBattlefield}
-          onJoinBattlefield={handleJoinBattlefield}
-          onLeaveBattlefield={handleLeaveBattlefield}
-          playersFromLobby={players}
-          assetsFromServer={assets}
-          onPlaceAsset={(assetId, x, y) =>
-            setAssets((prev) =>
-              prev.map((a) =>
-                a.id === assetId ? { ...a, x, y, found: false } : a
+        <div className="battlefield-content">
+          <Battlefield
+            userRole={user.role}
+            battlefieldOpen={battlefieldOpen}
+            gameStarted={gameStarted}
+            selectedBackground={selectedBackground}
+            inBattlefield={inBattlefield}
+            onJoinBattlefield={handleJoinBattlefield}
+            onLeaveBattlefield={handleLeaveBattlefield}
+            playersFromLobby={players}
+            assetsFromServer={assets}
+            onPlaceAsset={(assetId, x, y) =>
+              setAssets((prev) =>
+                prev.map((a) =>
+                  a.id === assetId ? { ...a, x, y, found: false } : a
+                )
               )
-            )
-          }
-        />
+            }
+          />
+        </div>
 
-        {/* Right Sidebars (Background + Assets) */}
-        {(!isFullscreen || isHostOrCreator) && (
+        {/* Right Sidebars */}
+        {isHostOrCreator && battlefieldOpen && (
           <div className="host-sidebars">
             <BackgroundSidebar
               userRole={user.role}

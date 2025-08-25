@@ -1,145 +1,159 @@
-// src/LobbySidebar.js
 import React, { useState, useEffect } from "react";
 import { socket } from "./socket";
 import Dice from "./components/Dice";
 import "./LobbySidebar.css";
 
 export default function LobbySidebar({
-  currentUser = {}, // { id, username, role }
+  currentUser,
+  setCurrentUser,
+  onLeaveLobby,
+  userRole,
   gameStarted,
-  setGameStarted,
   battlefieldOpen,
-  setBattlefieldOpen,
+  inBattlefield,
+  onOpenBattlefield,
+  onStartGame,
+  onEndGame,
+  onJoinBattlefield,
+  onLeaveBattlefield,
+  setPlayers,
+  setAssets,
 }) {
-  const [lobby, setLobby] = useState({
-    creator: null,
-    host: null,
-    players: [],
-    battlefieldPlayers: [],
-  });
+  const [creator, setCreator] = useState(null);
+  const [host, setHost] = useState(null);
+  const [players, setLobbyPlayers] = useState([]);
+  const [battlefieldPlayers, setBattlefieldPlayers] = useState([]);
+  const [selectedDie, setSelectedDie] = useState("d6");
+  const [diceRolls, setDiceRolls] = useState([]);
+  const [rolling, setRolling] = useState(false);
 
-  // Listen for lobby updates from server
+  const diceTypes = ["d4", "d6", "d8", "d10", "d20", "d50"];
+  const isCreatorOrHost = userRole === "creator" || userRole === "host";
+
+  const isInBattlefield = currentUser?.id
+    ? battlefieldPlayers.includes(currentUser.id)
+    : false;
+
+  // --- Socket listeners ---
   useEffect(() => {
-    socket.on("lobbyUpdate", (data) => setLobby(data));
+    socket.on("lobbyUpdate", (lobby) => {
+      setCreator(lobby.creator || null);
+      setHost(lobby.host || null);
+      setLobbyPlayers(lobby.players || []);
+      setBattlefieldPlayers(lobby.battlefieldPlayers || []);
+      setPlayers(lobby.players || []);
+    });
 
-    socket.on("gameStarted", () => setGameStarted(true));
-    socket.on("gameEnded", () => setGameStarted(false));
+    socket.on("diceRolled", (data) => {
+      setDiceRolls((prev) => [...prev, data]);
+      setTimeout(() => {
+        setDiceRolls((prev) => prev.filter((d) => d !== data));
+      }, 3000);
+    });
 
     return () => {
       socket.off("lobbyUpdate");
-      socket.off("gameStarted");
-      socket.off("gameEnded");
+      socket.off("diceRolled");
     };
-  }, [setGameStarted]);
+  }, [setPlayers]);
 
-  // --- Button handlers ---
-  const handleStartGame = () => {
-    socket.emit("startGame");
+  // --- Dice roll handler ---
+  const handleRollDice = () => {
+    if (!selectedDie || rolling) return;
+    setRolling(true);
+    setTimeout(() => {
+      setRolling(false);
+      socket.emit("rollDice", {
+        username: currentUser?.username || "Unknown",
+        diceType: selectedDie,
+      });
+    }, 500); // simulate rolling animation
   };
 
-  const handleEndGame = () => {
-    socket.emit("endGame");
-  };
-
-  const handleOpenBattlefield = () => {
-    setBattlefieldOpen(true);
-  };
-
-  const handleLeaveLobby = () => {
-    socket.emit("leaveLobby", currentUser.id, (success) => {
-      if (success) {
-        window.location.reload();
-      }
-    });
-  };
-
-  const handleJoinBattlefield = () => {
-    socket.emit("joinBattlefield", currentUser.id);
-  };
-
-  const handleLeaveBattlefield = () => {
-    socket.emit("leaveBattlefield", currentUser.id);
-  };
-
-  const handleRemovePlayer = (id) => {
-    socket.emit("removePlayer", id);
-  };
-
-  const handleClearLobby = () => {
-    socket.emit("clearLobby");
-  };
-
-  // --- Role-based buttons ---
-  const renderButtons = () => {
-    if (!currentUser || !currentUser.role) return null;
-
-    const { role } = currentUser;
-
-    return (
-      <div className="lobby-buttons">
-        {/* Everyone can leave */}
-        <button onClick={handleLeaveLobby}>Leave Lobby</button>
-
-        {/* Creator + Host controls */}
-        {(role === "creator" || role === "host" || role === "creator & host") && (
-          <>
-            <button onClick={handleOpenBattlefield}>Open Battlefield</button>
-            {!gameStarted ? (
-              <button onClick={handleStartGame}>Start Game</button>
-            ) : (
-              <button onClick={handleEndGame}>End Game</button>
-            )}
-            <button onClick={handleClearLobby}>Clear Lobby</button>
-          </>
-        )}
-
-        {/* Player controls */}
-        {role === "player" && battlefieldOpen && (
-          lobby.battlefieldPlayers.includes(currentUser.id) ? (
-            <button onClick={handleLeaveBattlefield}>Leave Battlefield</button>
-          ) : (
-            <button onClick={handleJoinBattlefield}>Join Battlefield</button>
-          )
-        )}
-
-        {/* Creator & Host can remove battlefield players */}
-        {(role === "creator" || role === "host" || role === "creator & host") &&
-          lobby.battlefieldPlayers.map((pid) => {
-            const player = lobby.players.find((p) => p.id === pid);
-            return (
-              player && (
-                <button
-                  key={pid}
-                  onClick={() => handleRemovePlayer(pid)}
-                >
-                  Remove {player.username} from Battlefield
-                </button>
-              )
-            );
-          })}
-      </div>
-    );
-  };
+  // --- Lobby actions ---
+  const handleJoinBattlefieldClick = () => socket.emit("joinBattlefield", currentUser.id);
+  const handleLeaveBattlefieldClick = () => socket.emit("leaveBattlefield", currentUser.id);
+  const handleRemovePlayer = (id) => socket.emit("removePlayer", id);
+  const handleClearLobby = () => socket.emit("clearLobby", { role: userRole });
 
   return (
-    <div className="lobby-sidebar">
-      <h2>Lobby</h2>
-      <p><strong>Creator:</strong> {lobby.creator?.username || "None"}</p>
-      <p><strong>Host:</strong> {lobby.host?.username || "None"}</p>
-      <h3>Players</h3>
-      <ul>
-        {lobby.players.map((p) => (
+    <div className="lobby-sidebar-inner">
+      {/* Players */}
+      <ul className="player-list">
+        {creator && (
+          <li className={creator.id === host?.id ? "creator-host" : "creator"}>
+            {creator.username} ({creator.id === host?.id ? "Creator & Host" : "Creator"})
+          </li>
+        )}
+        {host && host.id !== creator?.id && (
+          <li className="host">{host.username} (Host)</li>
+        )}
+        {players.map((p) => (
           <li key={p.id}>
-            {p.username}
-            {lobby.battlefieldPlayers.includes(p.id) && " ⚔️"}
+            <span>{p.username}</span>
+            {diceRolls
+              .filter((d) => d.username === p.username)
+              .map((d, idx) => (
+                <div key={idx} className="sidebar-dice">
+                  <Dice type={d.diceType} size={20} />
+                  <span>{d.diceValue}</span>
+                </div>
+              ))}
+            {isCreatorOrHost && p.id !== currentUser.id && (
+              <button onClick={() => handleRemovePlayer(p.id)}>Remove</button>
+            )}
           </li>
         ))}
       </ul>
 
-      {renderButtons()}
+      {/* Dice selector */}
+      <div className="dice-selection">
+        <h3>Select Dice</h3>
+        <div className="dice-thumbnails">
+          {diceTypes.map((die) => (
+            <div
+              key={die}
+              className={selectedDie === die ? "selected-dice" : ""}
+              onClick={() => setSelectedDie(die)}
+            >
+              <Dice type={die} size={40} />
+            </div>
+          ))}
+        </div>
+        <button onClick={handleRollDice} disabled={rolling}>
+          {rolling ? "Rolling..." : "Roll Dice"}
+        </button>
+      </div>
 
-      <h3>Dice Roller</h3>
-      <Dice username={currentUser.username} />
+      {/* Lobby controls */}
+      <div className="lobby-controls">
+        <button onClick={onLeaveLobby}>Leave Lobby</button>
+
+        {isCreatorOrHost && !battlefieldOpen && (
+          <button onClick={onOpenBattlefield}>Open Battlefield</button>
+        )}
+
+        {isCreatorOrHost && battlefieldOpen && !gameStarted && (
+          <button onClick={onStartGame}>Start Game</button>
+        )}
+
+        {isCreatorOrHost && gameStarted && (
+          <button onClick={onEndGame}>End Game</button>
+        )}
+
+        {isCreatorOrHost && <button onClick={handleClearLobby}>Clear Lobby</button>}
+
+        {!isCreatorOrHost && battlefieldOpen && (
+          <>
+            {!isInBattlefield && (
+              <button onClick={handleJoinBattlefieldClick}>Join Battlefield</button>
+            )}
+            {isInBattlefield && (
+              <button onClick={handleLeaveBattlefieldClick}>Leave Battlefield</button>
+            )}
+          </>
+        )}
+      </div>
     </div>
   );
 }
