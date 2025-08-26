@@ -13,14 +13,6 @@ html, body, #root, .app-container {
   position: relative;
 }
 
-/* Fullscreen mode overrides */
-.fullscreen-mode {
-  display: flex;
-  width: 100vw;
-  height: 100vh;
-  overflow: hidden;
-}
-
 /* ---- Left Lobby Sidebar ---- */
 .lobby-sidebar {
   width: 250px;
@@ -35,88 +27,6 @@ html, body, #root, .app-container {
 
 .lobby-sidebar.hidden {
   transform: translateX(-100%);
-}
-
-/* ---- Center Battlefield ---- */
-.battlefield-wrapper {
-  flex: 1;
-  position: relative;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background-color: #111;
-  overflow: hidden;
-  min-width: 0;
-}
-
-/* Battlefield content scaling */
-.battlefield-wrapper > * {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-/* ---- Right Host Sidebars ---- */
-.host-sidebars {
-  display: flex;
-  flex-direction: column;
-  width: 250px;
-  background-color: #1a1a1a;
-  color: #fff;
-  box-sizing: border-box;
-  padding: 10px;
-  overflow-y: auto;
-  flex-shrink: 0;
-}
-
-.host-sidebars > * {
-  margin-bottom: 15px;
-  flex: 1;
-  background-color: #2a2a2a;
-  border-radius: 6px;
-  padding: 10px;
-}
-
-/* Player list */
-.player-list {
-  list-style: none;
-  padding: 0;
-  margin: 0 0 20px 0;
-}
-
-.player-list li {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 5px;
-}
-
-/* Dice section */
-.dice-selection {
-  margin-bottom: 20px;
-}
-
-.dice-thumbnails div.selected-dice {
-  border: 2px solid #4caf50;
-  box-shadow: 0 0 5px #4caf50;
-}
-
-/* Dice area */
-.dice-area {
-  margin-bottom: 20px;
-}
-
-.dice-result {
-  margin-top: 10px;
-  font-weight: bold;
-}
-
-/* Lobby controls buttons */
-.lobby-controls button {
-  display: block;
-  margin-bottom: 5px;
-  width: 100%;
-  padding: 5px;
-  cursor: pointer;
 }
 
 /* Toggle button for collapsing left LobbySidebar */
@@ -144,18 +54,39 @@ html, body, #root, .app-container {
   background: #555;
 }
 
-.sidebar-left-open + .toggle-lobby {
-  left: 250px;
+/* ---- Center Battlefield ---- */
+.battlefield-wrapper {
+  flex: 1;
+  position: relative; /* required for absolute children */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #111;
+  overflow: hidden;
+  min-width: 0;
 }
 
-/* Fullscreen toggle button */
-.fullscreen-toggle {
+/* Fullscreen mode only affects battlefield, not sidebars */
+.battlefield-wrapper.fullscreen-mode {
   position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 999;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Fullscreen toggle button inside battlefield */
+.battlefield-wrapper .fullscreen-toggle {
+  position: absolute; /* absolute inside battlefield wrapper */
   top: 10px;
   right: 10px;
-  z-index: 1001;
+  z-index: 1000;
   padding: 8px 12px;
-  background-color: #444;
+  background-color: #444; /* dark button */
   color: #fff;
   border: none;
   border-radius: 4px;
@@ -163,16 +94,96 @@ html, body, #root, .app-container {
   transition: background 0.2s;
 }
 
-.fullscreen-toggle:hover {
+.battlefield-wrapper .fullscreen-toggle:hover {
   background-color: #555;
 }
 
-/* ---- Asset dragging (cross-browser user-select) ---- */
+/* ---- Left Lobby Sidebar ---- */
+.lobby-sidebar {
+  width: 250px;
+  background-color: #222;
+  color: #fff;
+  padding: 10px;
+  box-sizing: border-box;
+  overflow-y: auto;
+  transition: transform 0.3s ease;
+  flex-shrink: 0;
+  z-index: 10;
+}
+
+.lobby-sidebar.hidden {
+  transform: translateX(-100%);
+}
+
+/* ---- Right Host Sidebars ---- */
+.host-sidebars {
+  display: flex;
+  flex-direction: column;
+  width: 250px;
+  background-color: #1a1a1a;
+  color: #fff;
+  box-sizing: border-box;
+  padding: 10px;
+  overflow-y: auto;
+  flex-shrink: 0;
+  z-index: 10;
+}
+
+.host-sidebars > * {
+  margin-bottom: 15px;
+  flex: 1;
+  background-color: #2a2a2a;
+  border-radius: 6px;
+  padding: 10px;
+}
+
+/* ---- Player list ---- */
+.player-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 20px 0;
+}
+
+.player-list li {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 5px;
+}
+
+/* ---- Dice Section ---- */
+.dice-selection {
+  margin-bottom: 20px;
+}
+
+.dice-thumbnails div.selected-dice {
+  border: 2px solid #4caf50;
+  box-shadow: 0 0 5px #4caf50;
+}
+
+.dice-area {
+  margin-bottom: 20px;
+}
+
+.dice-result {
+  margin-top: 10px;
+  font-weight: bold;
+}
+
+/* Lobby control buttons */
+.lobby-controls button {
+  display: block;
+  margin-bottom: 5px;
+  width: 100%;
+  padding: 5px;
+  cursor: pointer;
+}
+
+/* ---- Asset dragging ---- */
 .asset {
   position: absolute;
   cursor: grab;
-  -webkit-user-select: none; /* Safari / iOS */
-  -moz-user-select: none;    /* Firefox */
-  -ms-user-select: none;     /* IE/Edge */
-  user-select: none;         /* Standard */
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
 }

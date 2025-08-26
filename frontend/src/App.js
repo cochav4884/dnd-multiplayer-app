@@ -24,18 +24,36 @@ export default function App() {
 
   const isHostOrCreator = user?.role === "host" || user?.role === "creator";
 
-  // Connect socket when user logs in
+  // Restore user from localStorage on mount
   useEffect(() => {
-    if (user?.username && user?.role) {
-      connectSocket(user.username, user.role);
-
-      socket.on("lobbyUpdate", (lobby) => {
-        setPlayers(lobby.players || []);
-      });
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      const parsedUser = JSON.parse(storedUser);
+      setUser(parsedUser);
+      connectSocket(parsedUser.username, parsedUser.role);
     }
+  }, [setUser]);
 
-    return () => disconnectSocket();
+  // Update localStorage whenever user changes
+  useEffect(() => {
+    if (user) {
+      localStorage.setItem("user", JSON.stringify(user));
+      connectSocket(user.username, user.role);
+    } else {
+      localStorage.removeItem("user");
+      disconnectSocket();
+    }
   }, [user]);
+
+  // Handle lobby updates
+  useEffect(() => {
+    socket.on("lobbyUpdate", (lobby) => {
+      setPlayers(lobby.players || []);
+    });
+    return () => {
+      socket.off("lobbyUpdate");
+    };
+  }, []);
 
   const handleLeaveLobby = () => {
     if (!user) return;
@@ -71,7 +89,7 @@ export default function App() {
   if (!user) return <Login />;
 
   return (
-    <div className={`app-container ${isFullscreen ? "fullscreen-mode" : ""}`}>
+    <div className="app-container">
       {/* Left Lobby Sidebar */}
       {!isFullscreen && lobbyOpen && (
         <div className="lobby-sidebar">
@@ -105,7 +123,9 @@ export default function App() {
       )}
 
       {/* Center Battlefield */}
-      <div className="battlefield-wrapper">
+      <div
+        className={`battlefield-wrapper ${isFullscreen ? "fullscreen-mode" : ""}`}
+      >
         <Battlefield
           userRole={user.role}
           battlefieldOpen={battlefieldOpen}
@@ -118,10 +138,17 @@ export default function App() {
           assetsFromServer={assets}
           onPlaceAsset={(assetId, x, y) =>
             setAssets((prev) =>
-              prev.map((a) => (a.id === assetId ? { ...a, x, y, found: false } : a))
+              prev.map((a) =>
+                a.id === assetId ? { ...a, x, y, found: false } : a
+              )
             )
           }
         />
+
+        {/* Fullscreen toggle inside battlefield */}
+        <button className="fullscreen-toggle" onClick={toggleFullscreen}>
+          {isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
+        </button>
       </div>
 
       {/* Right host sidebars */}
@@ -135,11 +162,6 @@ export default function App() {
           <AssetsSidebar userRole={user.role} />
         </div>
       )}
-
-      {/* Fullscreen toggle */}
-      <button className="fullscreen-button" onClick={toggleFullscreen}>
-        {isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
-      </button>
     </div>
   );
 }
